@@ -28,5 +28,9 @@ int main(void) {
     int ret = slp_png_write(a, new_path);
     if (ret != 0) {printf("\nwrite failed: %d\n", ret);return 1;}
     free(a.buffer);
+
+    slp_image b = slp_png_read(new_path);
+    if (b.buffer == NULL) {printf("\nread newly saved .png failed: %d\n", a.bit_depth);return 1;}
+    free(b.buffer);
     return 0;
 }
