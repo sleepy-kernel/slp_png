@@ -85,7 +85,7 @@ const unsigned char IENDsig[4] = {'I', 'E', 'N', 'D'};
 const unsigned char PLTEsig[4] = {'P', 'L', 'T', 'E'};
 const unsigned char tRNSsig[4] = {'t', 'R', 'N', 'S'};
 */
-const uint64_t CHUNK = 65536;
+static const int CHUNK = 65536;
 
 
 
