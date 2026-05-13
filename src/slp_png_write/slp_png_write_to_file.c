@@ -48,8 +48,7 @@ struct IHDR {
     uint8_t compression_method;
     uint8_t filter_method;
     uint8_t interlace_method;
-}__attribute__((__packed__));
-
+};
 
 
 
@@ -135,25 +134,22 @@ int slp_png_write(struct slp_image image, const char* path) {
     }
 
     uint32_t data_len = edian_swap_u32(13, is_little_edian);
-    if (fwrite(PNGsig, 1, 8, file) != 8) {
-        fclose(file);
-        return 1;
-    }
-    
-    if (fwrite(&data_len, 1, 4, file) != 4) {
+    if (fwrite(PNGsig                    , 1, 8, file) != 8 ||
+        fwrite(&data_len                 , 1, 4, file) != 4 ||
+        fwrite(IHDRsig                   , 1, 4, file) != 4 ||
+        fwrite(&header.width             , 1, 4, file) != 4 ||
+        fwrite(&header.height            , 1, 4, file) != 4 ||
+        fwrite(&header.bit_depth         , 1, 1, file) != 1 ||
+        fwrite(&header.color_type        , 1, 1, file) != 1 ||
+        fwrite(&header.compression_method, 1, 1, file) != 1 ||
+        fwrite(&header.filter_method     , 1, 1, file) != 1 ||
+        fwrite(&header.interlace_method  , 1, 1, file) != 1)
+    {
         fclose(file);
         return 1;
     }
 
-    if (fwrite(IHDRsig, 1, 4, file) != 4) {
-        fclose(file);
-        return 1;
-    }
 
-    if (fwrite(&header, 1, sizeof(header), file) != 13) {
-        fclose(file);
-        return 1;
-    }
 
     uint32_t crc_ = zng_crc32(0, Z_NULL, 0);
     crc_ = zng_crc32(crc_, IHDRsig, 4);
