@@ -10,8 +10,8 @@
 // palette_4bit
 // 10.4-MB
 
-const char path[] = "test_images/10.4-MB.png";
-const char new_path[] = "image_out/test_slp_png_read_write.png";
+const char path[] = "tests/test_images/10.4-MB.png";
+const char new_path[] = "tests/test_slp_png_read_write.png";
 
 int main(void) {
     slp_image a = slp_png_read(path);

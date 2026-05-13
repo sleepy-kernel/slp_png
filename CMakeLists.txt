@@ -13,7 +13,7 @@ add_library("slp_png"
 
 target_include_directories("slp_png" PUBLIC include)
 
-target_compile_options("slp_png" PUBLIC -march=native -O3)
+#target_compile_options("slp_png" PUBLIC -march=native -O3)
 
 find_package(zlib-ng CONFIG REQUIRED)
 find_package(Threads REQUIRED)
@@ -23,7 +23,7 @@ target_link_libraries("slp_png"
     PUBLIC Threads::Threads
 )
 
-add_executable("perf_test" perf_test.c)
+add_executable("perf_test" tests/perf_test.c)
 target_link_libraries("perf_test" slp_png)
 
 add_executable("test" tests/test_slp_png_read_write.c)
