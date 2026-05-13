@@ -1,20 +1,20 @@
-## This meant to be an open source lightweight, modern, fast PNG decoder/encoder
+## This is meant to be an open-source lightweight, modern, fast PNG codec.
 
 - AVX2, SSE2 support
 - Still depends on zlib-ng
-- Compatibility is meant to be high such that it can run on a microcontroler (still in progress)
-    - As I cannot test with all hardware so I'd need help in testing
+- Compatibility is meant to be high such that it can run on a microcontroller (still in progress).
+    - As I cannot test with all hardware so, I'd need help in testing.
 - Performance is already high.
-    - In current version, as tested on my machine, deflate/inflate runtime is more than 80% of the test program's total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime
+    - In the current version, as tested on my machine, deflate/inflate runtime is more than 80% of the total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime.
 
 
 ## Contribute
 
 - Please don't vibe coding, you can't enjoy the process if AI did it for you :)
-- I appreciate all your help
-- I will definitely respond to your pull request
-- Just freely share your idea you don't have to be formal
-- Beginners are welcome
+- I appreciate all your help.
+- I will definitely respond to your pull request.
+- Just freely share your idea and you don't have to be formal.
+- Beginners are welcome.
 
 
 ## Basic usage
