@@ -173,7 +173,7 @@ struct slp_image slp_png_read(const char path[]) {
     const int interlace_method = worker[28];
 
 
-    if (__builtin_expect((compression_method | filter_method | interlace_method) != 0 | channels == 0, 0)) {
+    if (__builtin_expect(compression_method != 0 || filter_method != 0 || interlace_method != 0 || channels == 0, 0)) {
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
