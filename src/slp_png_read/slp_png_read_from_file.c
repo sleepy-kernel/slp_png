@@ -71,7 +71,7 @@ static uint64_t ceil__(double x);
 
 // constants
 enum {
-    PNGsig = 0x89504E470D0A1A0AULL,
+    PNGsig  = 0x89504E470D0A1A0A,
     IHDRsig = 0x49484452,
     IDATsig = 0x49444154,
     IENDsig = 0x49454E44,

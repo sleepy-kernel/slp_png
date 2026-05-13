@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library("slp_png"
-    src/slp_png_read/slp_png_read_to_file.c
+    src/slp_png_read/slp_png_read_from_file.c
     src/slp_png_write/slp_png_write_to_file.c
     src/slp_image_transform/slp_image_transform.c
 )
