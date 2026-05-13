@@ -71,6 +71,8 @@ static uint64_t ceil__(double x);
 
 // constants
 enum {
+    CHUNK = 65536,
+
     IHDRsig = 0x49484452,
     IDATsig = 0x49444154,
     IENDsig = 0x49454E44,
@@ -85,7 +87,6 @@ const unsigned char IENDsig[4] = {'I', 'E', 'N', 'D'};
 const unsigned char PLTEsig[4] = {'P', 'L', 'T', 'E'};
 const unsigned char tRNSsig[4] = {'t', 'R', 'N', 'S'};
 */
-static const int CHUNK = 65536;
 
 
 

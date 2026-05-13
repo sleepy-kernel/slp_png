@@ -82,7 +82,9 @@ static const unsigned char IHDRsig[4] = {'I', 'H', 'D', 'R'};
 static const unsigned char IDATsig[4] = {'I', 'D', 'A', 'T'};
 static const unsigned char IENDsig[12] = {0, 0, 0, 0, 'I', 'E', 'N', 'D', 0xAE, 0x42, 0x60, 0x82};
 static const int level = 6; // level of compression
-static const int CHUNK = 65536;// just use sth that fit well on cache, fwrite blocking or not depends more on the kernel
+enum {
+    CHUNK = 65536// just use sth that fit well on cache, fwrite blocking or not depends more on the kernel
+};
 
 
 
