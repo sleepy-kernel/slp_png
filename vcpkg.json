@@ -3,5 +3,6 @@
   "version": "1.0",
   "dependencies": [
     "zlib-ng"
-  ]
+  ],
+  "license": "GPL-3.0-only"
 }
