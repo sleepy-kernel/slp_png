@@ -1,4 +1,4 @@
-## This is meant to be an open-source lightweight, modern, fast PNG codec.
+## This is meant to be an open-source, lightweight, modern, fast PNG codec
 
 - AVX2, SSE2 support
 - Still depends on zlib-ng
