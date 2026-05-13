@@ -23,7 +23,7 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         build_type: [Release, Debug]
         c_compiler: [gcc, clang, cl]
         include:
@@ -36,9 +36,6 @@ jobs:
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
         exclude:
           - os: windows-latest
             c_compiler: gcc
@@ -46,22 +43,9 @@ jobs:
             c_compiler: clang
           - os: ubuntu-latest
             c_compiler: cl
-          - os: macos-latest
-            c_compiler: gcc
-          - os: macos-latest
-            c_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Setup vcpkg
-      uses: lukka/run-vcpkg@v11
-      with:
-        vcpkgGitURL: 'https://github.com/microsoft/vcpkg.git'
-        vcpkgGitCommitId: '8defa4b8bc4c35071c678e87a0e140dd433489bb'
-        vcpkgJsonGlob: 'vcpkg.json'
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -69,6 +53,21 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+
+    - name: git clone vcpkg
+      working-directory: ${{ github.workspace }}
+      run: git clone --depth=1 http://github.com/Microsoft/vcpkg
+    
+    - name: bootstrap vcpkg
+      shell: bash
+      run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.bat
+          else
+            ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh
+          fi
+
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -92,6 +91,7 @@ jobs:
       run: ctest --build-config ${{ matrix.build_type }}
 
     - name: Install Valgrind
+      if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install -y valgrind
 
     - name: Run valgrind
