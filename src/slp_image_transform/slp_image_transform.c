@@ -22,7 +22,12 @@ limitations under the License.
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 
 #ifdef __AVX2__
 #include <immintrin.h>
@@ -586,7 +591,16 @@ bool slp_image_linear_transform(struct slp_image *image, const double* A, const 
 
     uint8_t* src = image->buffer;
 
-    const int P = (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? (2) : (sysconf(_SC_NPROCESSORS_ONLN));
+    //get number of processers
+    #ifdef _WIN32
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    int nproc = sysinfo.dwNumberOfProcessors;
+    #else
+    int nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    #endif
+
+    const int P = (nproc <= 1) ? (2) : (nproc);
 
     pthread_t *threads = (pthread_t*)malloc(P * sizeof(*threads));
     if (__builtin_expect(threads == NULL, 0)) {

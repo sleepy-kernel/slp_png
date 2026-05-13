@@ -961,7 +961,12 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 crc_ = zng_crc32(crc_, worker + 4, 4);
                 crc_ = zng_crc32(crc_, trns, data_len);
 
-                fread(worker + 8, 1, 4, file);
+                if (__builtin_expect(fread(worker + 8, 1, 4, file) != 4, 0)) {
+                    free(trns);
+                    slp_png_stream->bit_depth = 1;
+                    goto cleanup;
+                }
+
                 if (edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc_) {
                     free(trns);
                     slp_png_stream->bit_depth = 2;
