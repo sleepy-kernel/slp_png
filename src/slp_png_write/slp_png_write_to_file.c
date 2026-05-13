@@ -117,7 +117,7 @@ int slp_png_write(struct slp_image image, const char* path) {
     }
 
     FILE *file = fopen(path, "wb");
-    if (__builtin_expect(file == NULL, 0)) return 1;
+    if (file == NULL) return 1;
 
     struct IHDR header = {0};
     
@@ -135,22 +135,22 @@ int slp_png_write(struct slp_image image, const char* path) {
     }
 
     uint32_t data_len = edian_swap_u32(13, is_little_edian);
-    if (__builtin_expect(fwrite(PNGsig, 1, 8, file) != 8, 0)) {
+    if (fwrite(PNGsig, 1, 8, file) != 8) {
         fclose(file);
         return 1;
     }
     
-    if (__builtin_expect(fwrite(&data_len, 1, 4, file) != 4, 0)) {
+    if (fwrite(&data_len, 1, 4, file) != 4) {
         fclose(file);
         return 1;
     }
 
-    if (__builtin_expect(fwrite(IHDRsig, 1, 4, file) != 4, 0)) {
+    if (fwrite(IHDRsig, 1, 4, file) != 4) {
         fclose(file);
         return 1;
     }
 
-    if (__builtin_expect(fwrite(&header, 1, sizeof(header), file) != 13, 0)) {
+    if (fwrite(&header, 1, sizeof(header), file) != 13) {
         fclose(file);
         return 1;
     }
@@ -160,7 +160,7 @@ int slp_png_write(struct slp_image image, const char* path) {
     crc_ = zng_crc32(crc_, (uint8_t*)(&header), 13);
     crc_ = edian_swap_u32(crc_, is_little_edian);
 
-    if (__builtin_expect(fwrite(&crc_, 1, 4, file) != 4, 0)) {
+    if (fwrite(&crc_, 1, 4, file) != 4) {
         fclose(file);
         return 1;
     }
@@ -279,7 +279,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
     strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
     int ret = zng_deflateInit2(&strm, level, Z_DEFLATED, 15, 8, Z_FILTERED);
-    if (__builtin_expect(ret != Z_OK, 0)) {
+    if (ret != Z_OK) {
         return_code = 3;
         goto cleanup;
     }
@@ -288,7 +288,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
     {
         int64_t filter_scores[5] = {0};
 
-        if (__builtin_expect(i == 0, 0))
+        if (i == 0)
         {
             uint8_t *raw = image_buffer;
 
@@ -456,7 +456,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
             ret = zng_deflate(&strm, Z_NO_FLUSH);
             //end = clock();
             //deflate_runtime += (double)(end - start) / CLOCKS_PER_SEC;
-            if (__builtin_expect(ret != Z_OK, 0)) {
+            if (ret != Z_OK) {
                 return_code = 3;
                 zng_deflateEnd(&strm);
                 goto cleanup;
@@ -472,7 +472,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
                 crc_ = edian_swap_u32(crc_, is_little_edian);
                 memcpy(out + 8 + have, &crc_, 4);
 
-                if (__builtin_expect(fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4, 0)) {
+                if (fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4) {
                     return_code = 1;
                     zng_deflateEnd(&strm);
                     goto cleanup;
@@ -491,7 +491,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
         ret = zng_deflate(&strm, Z_FINISH);
         //end = clock();
         //deflate_runtime += (double)(end - start) / CLOCKS_PER_SEC;
-        if (__builtin_expect(ret != Z_OK && ret != Z_STREAM_END, 0)) {
+        if (ret != Z_OK && ret != Z_STREAM_END) {
             return_code = 3;
             zng_deflateEnd(&strm);
             goto cleanup;
@@ -505,7 +505,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
             crc_ = zng_crc32(crc_, out + 4, 4 + have);
             crc_ = edian_swap_u32(crc_, is_little_edian);
             memcpy(out + 8 + have, &crc_, 4);
-            if (__builtin_expect(fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4, 0)) {
+            if (fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4) {
                 return_code = 1;
                 zng_deflateEnd(&strm);
                 goto cleanup;
@@ -522,7 +522,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
     crc_ = zng_crc32(crc_, out + 4, 4 + have);
     crc_ = edian_swap_u32(crc_, is_little_edian);
     memcpy(out + 8 + have, &crc_, 4);
-    if (__builtin_expect(fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4, 0)) {
+    if (fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4) {
         return_code = 1;
         zng_deflateEnd(&strm);
         goto cleanup;
@@ -560,7 +560,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
 
 
     // writting IEND
-    if (__builtin_expect(fwrite(IENDsig, 1, 12, file) != 12, 0)) {
+    if (fwrite(IENDsig, 1, 12, file) != 12) {
         return_code = 1;
         goto cleanup;
     }

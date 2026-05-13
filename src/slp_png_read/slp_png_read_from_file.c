@@ -112,7 +112,7 @@ struct slp_image slp_png_read(const char path[]) {
     }
 
     int ret = fseek(file, 0, SEEK_END);
-    if (__builtin_expect(ret != 0, 0)) {
+    if (ret != 0) {
         fclose(file);
         slp_png_stream.bit_depth = 1;
         slp_png_stream.buffer = NULL;
@@ -120,7 +120,7 @@ struct slp_image slp_png_read(const char path[]) {
     }
 
     long file_size = ftell(file);
-    if (__builtin_expect(file_size < 57, 0)) {// minimal size required for PNGSIG + IHDR + IDAT(with data len = 0) + IEND
+    if (file_size < 57) {// minimal size required for PNGSIG + IHDR + IDAT(with data len = 0) + IEND
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
@@ -128,7 +128,7 @@ struct slp_image slp_png_read(const char path[]) {
     }
 
     ret = fseek(file, 0, SEEK_SET);
-    if (__builtin_expect(ret != 0, 0)) {
+    if (ret != 0) {
         fclose(file);
         slp_png_stream.bit_depth = 1;
         slp_png_stream.buffer = NULL;
@@ -137,14 +137,14 @@ struct slp_image slp_png_read(const char path[]) {
 
     uint8_t worker[33];
 
-    if (__builtin_expect(fread(worker, 1, 33, file) < 33, 0)) {
+    if (fread(worker, 1, 33, file) < 33) {
         fclose(file);
         slp_png_stream.bit_depth = 1;
         slp_png_stream.buffer = NULL;
         return slp_png_stream;
     }
 
-    if (__builtin_expect(edian_swap_u64(*(uint64_t*)(worker), is_little_edian) != 0x89504E470D0A1A0A && edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != 13 && edian_swap_u32(*(uint32_t*)(worker + 12), is_little_edian) != IHDRsig, 0)) {
+    if (edian_swap_u64(*(uint64_t*)(worker), is_little_edian) != 0x89504E470D0A1A0A && edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != 13 && edian_swap_u32(*(uint32_t*)(worker + 12), is_little_edian) != IHDRsig) {
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
@@ -155,7 +155,7 @@ struct slp_image slp_png_read(const char path[]) {
     crc_ = zng_crc32(crc_, worker + 12, 4);
     crc_ = zng_crc32(crc_, worker + 16, 13);
 
-    if (__builtin_expect(edian_swap_u32(*(uint32_t*)(worker + 29), is_little_edian) != crc_, 0)) {
+    if (edian_swap_u32(*(uint32_t*)(worker + 29), is_little_edian) != crc_) {
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
@@ -172,7 +172,7 @@ struct slp_image slp_png_read(const char path[]) {
     const int interlace_method = worker[28];
 
 
-    if (__builtin_expect(compression_method != 0 || filter_method != 0 || interlace_method != 0 || channels == 0, 0)) {
+    if (compression_method != 0 || filter_method != 0 || interlace_method != 0 || channels == 0) {
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
@@ -183,7 +183,7 @@ struct slp_image slp_png_read(const char path[]) {
 
     slp_png_stream.buffer = (uint8_t*)malloc(size);
 
-    if (__builtin_expect(slp_png_stream.buffer == NULL, 0)) {
+    if (slp_png_stream.buffer == NULL) {
         fclose(file);
         slp_png_stream.bit_depth = -1;
         slp_png_stream.buffer = NULL;
@@ -193,7 +193,7 @@ struct slp_image slp_png_read(const char path[]) {
     if (color_type != 3) {
         slp_png_decode(&slp_png_stream, file, file_size);
 
-        if (__builtin_expect(slp_png_stream.bit_depth != bit_depth, 0)) {
+        if (slp_png_stream.bit_depth != bit_depth) {
             fclose(file);
             free(slp_png_stream.buffer);
             slp_png_stream.buffer = NULL;
@@ -203,7 +203,7 @@ struct slp_image slp_png_read(const char path[]) {
     else {
         slp_png_colortype3_decode(&slp_png_stream, file, file_size);
 
-        if (__builtin_expect(slp_png_stream.bit_depth != bit_depth, 0)) {
+        if (slp_png_stream.bit_depth != bit_depth) {
             fclose(file);
             free(slp_png_stream.buffer);
             slp_png_stream.buffer = NULL;
@@ -310,7 +310,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
 
     //
     do {
-        if (__builtin_expect(fread(worker, 1, 8, file) != 8, 0)) {
+        if (fread(worker, 1, 8, file) != 8) {
             slp_png_stream->bit_depth = 1;
             goto cleanup;
         }
@@ -334,7 +334,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
             // isIDAT
             case IDATsig: {
                 idat_check++;
-                if (__builtin_expect(idat_check > 1, 0)) {
+                if (idat_check > 1) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
                 }
@@ -347,7 +347,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                 strm.avail_in = 0;
                 strm.next_in = Z_NULL;
                 int ret = zng_inflateInit(&strm);
-                if (__builtin_expect(ret != Z_OK, 0)) {
+                if (ret != Z_OK) {
                     slp_png_stream->bit_depth = 3;
                     goto cleanup;
                 }
@@ -372,7 +372,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                 // data_len, ++12, data_len,...
                 do {
                     data_len = edian_swap_u32(*(uint32_t*)worker, is_little_edian);
-                    if (__builtin_expect(file_size <= data_len, 0)) {
+                    if (file_size <= data_len) {
                         slp_png_stream->bit_depth = 1;
                         zng_deflateEnd(&strm);
                         goto cleanup;
@@ -382,7 +382,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                     crc = zng_crc32(crc, worker + 4, 4);
 
                     if (data_len < ai) {
-                        if (__builtin_expect(fread(in + intrker, 1, data_len, file) != data_len, 0)) {
+                        if (fread(in + intrker, 1, data_len, file) != data_len) {
                             slp_png_stream->bit_depth = 1;
                             zng_deflateEnd(&strm);
                             goto cleanup;
@@ -392,7 +392,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         intrker += data_len;
                     }
                     else {
-                        if (__builtin_expect(fread(in + intrker, 1, ai, file) != ai, 0)) {
+                        if (fread(in + intrker, 1, ai, file) != ai) {
                             slp_png_stream->bit_depth = 1;
                             zng_deflateEnd(&strm);
                             goto cleanup;
@@ -409,7 +409,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                                 strm.next_out = out + offset;
                                 ret = zng_inflate(&strm, Z_NO_FLUSH);
                                 have = CHUNK - strm.avail_out;
-                                if (__builtin_expect(ret != Z_OK && ret != Z_STREAM_END, 0)) {
+                                if (ret != Z_OK && ret != Z_STREAM_END) {
                                     slp_png_stream->bit_depth = 3;
                                     zng_deflateEnd(&strm);
                                     goto cleanup;
@@ -419,7 +419,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                                 for (uint64_t i = 0; i < row_produced; i++) {
 
                                     // defilter to scanline[1] from buffer and scanline[0]
-                                    if (__builtin_expect(slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0, 0)) {
+                                    if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
                                         slp_png_stream->bit_depth = 2;
                                         zng_deflateEnd(&strm);
                                         goto cleanup;
@@ -436,7 +436,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                             ai = CHUNK;
                             intrker = 0;
                             if (ftrker > ai) {
-                                if (__builtin_expect(fread(in + intrker, 1, ai, file) != ai, 0)) {
+                                if (fread(in + intrker, 1, ai, file) != ai) {
                                     slp_png_stream->bit_depth = 1;
                                     zng_deflateEnd(&strm);
                                     goto cleanup;
@@ -449,7 +449,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                                 ai = 0;
                             }
                             else {
-                                if (__builtin_expect(fread(in + intrker, 1, ftrker, file) != ftrker, 0)) {
+                                if (fread(in + intrker, 1, ftrker, file) != ftrker) {
                                     slp_png_stream->bit_depth = 1;
                                     zng_deflateEnd(&strm);
                                     goto cleanup;
@@ -462,7 +462,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         } while (ftrker != 0);
                     }
 
-                    if (__builtin_expect(fread(worker + 8, 1, 4, file) != 4, 0)) {
+                    if (fread(worker + 8, 1, 4, file) != 4) {
                         slp_png_stream->bit_depth = 1;
                         zng_deflateEnd(&strm);
                         goto cleanup;
@@ -474,7 +474,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         goto cleanup;
                     }
 
-                    if (__builtin_expect(fread(worker, 1, 8, file) != 8, 0)) {
+                    if (fread(worker, 1, 8, file) != 8) {
                         slp_png_stream->bit_depth = 1;
                         zng_deflateEnd(&strm);
                         goto cleanup;
@@ -487,7 +487,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                     strm.next_out = out + offset;
                     ret = zng_inflate(&strm, Z_NO_FLUSH);
                     have = CHUNK - strm.avail_out;
-                    if (__builtin_expect(ret != Z_OK && ret != Z_STREAM_END, 0)) {
+                    if (ret != Z_OK && ret != Z_STREAM_END) {
                         slp_png_stream->bit_depth = 3;
                         goto cleanup;
                     }
@@ -496,7 +496,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                     for (uint64_t i = 0; i < row_produced; i++) {
 
                         // defilter to scanline[1] from buffer and scanline[0]
-                        if (__builtin_expect(slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0, 0)) {
+                        if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
                             slp_png_stream->bit_depth = 2;
                             goto cleanup;
                         }
@@ -511,7 +511,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                 } while (ret != Z_STREAM_END);
                 // if (offset != 0) throw std::runtime_error("data loss");
                 zng_inflateEnd(&strm);
-                if (__builtin_expect(fseek(file, -8, SEEK_CUR) != 0, 0)) {
+                if (fseek(file, -8, SEEK_CUR) != 0) {
                     slp_png_stream->bit_depth = 1;
                     goto cleanup;
                 }
@@ -521,7 +521,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
 
             // isIEND
             case IENDsig: {
-                if (__builtin_expect(idat_check == 0, 0)) {
+                if (idat_check == 0) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
                 }
@@ -562,7 +562,7 @@ static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const 
             break;
         }
         case 2: {
-            if (__builtin_expect(imtrker == 0, 0)) memcpy(scanline[1], buffer, bpr);
+            if (imtrker == 0) memcpy(scanline[1], buffer, bpr);
             else {
                 uint64_t i = 0;
                 #ifdef __AVX2__
@@ -577,7 +577,7 @@ static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const 
             break;
         }
         case 3: {
-            if (__builtin_expect(imtrker == 0, 0)) {
+            if (imtrker == 0) {
                 memcpy(scanline[1], buffer, bpp);
                 for (uint64_t i = bpp; i < bpr; i++) scanline[1][i] = buffer[i] + (scanline[1][i - bpp] >> 1);
             }
@@ -589,7 +589,7 @@ static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const 
             break;
         }
         case 4: {
-            if (__builtin_expect(imtrker == 0, 0)) {
+            if (imtrker == 0) {
                 memcpy(scanline[1], buffer, bpp);
                 for (uint64_t i = bpp; i < bpr; i++) scanline[1][i] = buffer[i] + scanline[1][i - bpp];
             }
@@ -639,7 +639,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
 
     //
     do {
-        if (__builtin_expect(fread(worker, 1, 8, file) != 8, 0)) {
+        if (fread(worker, 1, 8, file) != 8) {
             slp_png_stream->bit_depth = 1;
             goto cleanup;
         }
@@ -661,7 +661,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
             case IDATsig: {
 
                 idat_check++;
-                if (__builtin_expect(idat_check > 1, 0)) {
+                if (idat_check > 1) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
                 }
@@ -674,7 +674,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 strm.avail_in = 0;
                 strm.next_in = Z_NULL;
                 int ret = zng_inflateInit(&strm);
-                if (__builtin_expect(ret != Z_OK, 0)) {
+                if (ret != Z_OK) {
                     slp_png_stream->bit_depth = 3;
                     goto cleanup;
                 }
@@ -695,7 +695,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 uint8_t* scanline[2];
                 scanline[0] = (uint8_t*)malloc(bpr);
                 scanline[1] = (uint8_t*)malloc(bpr);
-                if (__builtin_expect(scanline[0] == NULL || scanline[1] == NULL, 0)) {
+                if (scanline[0] == NULL || scanline[1] == NULL) {
                     slp_png_stream->bit_depth = -1;
                     goto cleanup;
                 }
@@ -703,7 +703,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 // data_len, ++12, data_len,...
                 do {
                     data_len = edian_swap_u32(*(uint32_t*)worker, is_little_edian);
-                    if (__builtin_expect(file_size <= data_len, 0)) {
+                    if (file_size <= data_len) {
                         free(scanline[0]);
                         free(scanline[1]);
                         slp_png_stream->bit_depth = 1;
@@ -714,7 +714,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     crc = zng_crc32(crc, worker + 4, 4);
 
                     if (data_len < ai) {
-                        if (__builtin_expect(fread(in + intrker, 1, data_len, file) != data_len, 0)) {
+                        if (fread(in + intrker, 1, data_len, file) != data_len) {
                             free(scanline[0]);
                             free(scanline[1]);
                             slp_png_stream->bit_depth = 1;
@@ -725,7 +725,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                         intrker += data_len;
                     }
                     else {
-                        if (__builtin_expect(fread(in + intrker, 1, ai, file) != ai, 0)) {
+                        if (fread(in + intrker, 1, ai, file) != ai) {
                             free(scanline[0]);
                             free(scanline[1]);
                             slp_png_stream->bit_depth = 1;
@@ -743,7 +743,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                                 strm.next_out = out + offset;
                                 ret = zng_inflate(&strm, Z_NO_FLUSH);
                                 have = CHUNK - strm.avail_out;
-                                if (__builtin_expect(ret != Z_OK, 0)) {
+                                if (ret != Z_OK) {
                                     free(scanline[0]);
                                     free(scanline[1]);
                                     slp_png_stream->bit_depth = 3;
@@ -754,7 +754,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                                 for (uint64_t i = 0; i < row_produced; i++) {
 
                                     // defilter to scanline[1] from buffer and scanline[0]
-                                    if (__builtin_expect(slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0, 0)) {
+                                    if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
                                         free(scanline[0]);
                                         free(scanline[1]);
                                         slp_png_stream->bit_depth = 2;
@@ -775,7 +775,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                             ai = CHUNK;
                             intrker = 0;
                             if (ftrker > ai) {
-                                if (__builtin_expect(fread(in + intrker, 1, ai, file) != ai, 0)) {
+                                if (fread(in + intrker, 1, ai, file) != ai) {
                                     free(scanline[0]);
                                     free(scanline[1]);
                                     slp_png_stream->bit_depth = 1;
@@ -789,7 +789,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                                 ai = 0;
                             }
                             else {
-                                if (__builtin_expect(fread(in + intrker, 1, ftrker, file) != ftrker, 0)) {
+                                if (fread(in + intrker, 1, ftrker, file) != ftrker) {
                                     free(scanline[0]);
                                     free(scanline[1]);
                                     slp_png_stream->bit_depth = 1;
@@ -803,7 +803,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                         } while (ftrker != 0);
                     }
 
-                    if (__builtin_expect(fread(worker + 8, 1, 4, file) != 4, 0)) {
+                    if (fread(worker + 8, 1, 4, file) != 4) {
                         free(scanline[0]);
                         free(scanline[1]);
                         slp_png_stream->bit_depth = 1;
@@ -817,7 +817,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                         goto cleanup;
                     }
 
-                    if (__builtin_expect(fread(worker, 1, 8, file) != 8, 0)) {
+                    if (fread(worker, 1, 8, file) != 8) {
                         free(scanline[0]);
                         free(scanline[1]);
                         slp_png_stream->bit_depth = 1;
@@ -833,7 +833,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     ret = zng_inflate(&strm, Z_NO_FLUSH);
                     have = CHUNK - strm.avail_out;
 
-                    if (__builtin_expect(ret != Z_OK && ret != Z_STREAM_END, 0)) {
+                    if (ret != Z_OK && ret != Z_STREAM_END) {
                         free(scanline[0]);
                         free(scanline[1]);
                         slp_png_stream->bit_depth = 3;
@@ -844,7 +844,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     for (uint64_t i = 0; i < row_produced; i++) {
 
                         // defilter to scanline[1] from buffer and scanline[0]
-                        if (__builtin_expect(slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0, 0)) {
+                        if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
                             free(scanline[0]);
                             free(scanline[1]);
                             slp_png_stream->bit_depth = 2;
@@ -865,7 +865,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
 
                 // if (offset != 0) throw std::runtime_error("data loss");
                 zng_inflateEnd(&strm);
-                if (__builtin_expect(fseek(file, -8, SEEK_CUR) != 0, 0)) {
+                if (fseek(file, -8, SEEK_CUR) != 0) {
                     free(scanline[0]);
                     free(scanline[1]);
                     slp_png_stream->bit_depth = 1;
@@ -881,18 +881,18 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
             // PLTE
             case PLTEsig: {
                 plte_check++;
-                if (__builtin_expect(plte_check > 1, 0)) {
+                if (plte_check > 1) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
                 }
 
                 uint8_t* plte = (uint8_t*)malloc(data_len);
-                if (__builtin_expect(plte == NULL, 0)) {
+                if (plte == NULL) {
                     slp_png_stream->bit_depth = -1;
                     goto cleanup;
                 }
 
-                if (__builtin_expect(fread(plte, 1, data_len, file) != data_len, 0)) {
+                if (fread(plte, 1, data_len, file) != data_len) {
                     free(plte);
                     slp_png_stream->bit_depth = 1;
                     goto cleanup;
@@ -903,13 +903,13 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 crc_ = zng_crc32(crc_, plte, data_len);
 
 
-                if (__builtin_expect(fread(worker + 8, 1, 4, file) != 4, 0)) {
+                if (fread(worker + 8, 1, 4, file) != 4) {
                     free(plte);
                     slp_png_stream->bit_depth = 1;
                     goto cleanup;
                 }
 
-                if (__builtin_expect(plte_check > 1 || (data_len) % 3 != 0 || !(data_len / 3 <= 256) || edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc_, 0)) {
+                if (plte_check > 1 || (data_len) % 3 != 0 || !(data_len / 3 <= 256) || edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc_) {
                     free(plte);
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
@@ -917,7 +917,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
 
                 entries = data_len / 3;
                 palette = (uint8_t*)malloc(entries * 4);
-                if (__builtin_expect(palette == NULL, 0)) {
+                if (palette == NULL) {
                     free(plte);
                     slp_png_stream->bit_depth = -1;
                     goto cleanup;
@@ -939,18 +939,18 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
             // tRNS
             case tRNSsig: {
                 tRNS_check++;
-                if (__builtin_expect(tRNS_check > 1 || plte_check == 0 || plte_check == 0 || data_len > entries, 0)) {
+                if (tRNS_check > 1 || plte_check == 0 || plte_check == 0 || data_len > entries) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
                 }
 
                 uint8_t* trns = (uint8_t*)malloc(data_len);
-                if (__builtin_expect(trns == NULL, 0)) {
+                if (trns == NULL) {
                     slp_png_stream->bit_depth = -1;
                     goto cleanup;
                 }
 
-                if (__builtin_expect(fread(trns, 1, data_len, file) != data_len, 0)) {
+                if (fread(trns, 1, data_len, file) != data_len) {
                     free(trns);
                     slp_png_stream->bit_depth = 1;
                     goto cleanup;
@@ -960,7 +960,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 crc_ = zng_crc32(crc_, worker + 4, 4);
                 crc_ = zng_crc32(crc_, trns, data_len);
 
-                if (__builtin_expect(fread(worker + 8, 1, 4, file) != 4, 0)) {
+                if (fread(worker + 8, 1, 4, file) != 4) {
                     free(trns);
                     slp_png_stream->bit_depth = 1;
                     goto cleanup;
@@ -981,7 +981,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
 
             // isIEND
             case IENDsig: {
-                if (__builtin_expect(idat_check == 0 || plte_check == 0, 0)) {
+                if (idat_check == 0 || plte_check == 0) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
                 }
@@ -998,7 +998,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
 
     } while ((uint64_t)(ftell(file)) <= (file_size - 12) && iend_check == 0);
 
-    if (__builtin_expect(iend_check == 0, 0)) {
+    if (iend_check == 0) {
         slp_png_stream->bit_depth = 2;
         goto cleanup;
     }

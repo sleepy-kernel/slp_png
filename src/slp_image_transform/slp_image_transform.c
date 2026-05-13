@@ -290,25 +290,25 @@ static void* slp_image_crop_thread_task(void *arg) {
 
 // mem: O(N)
 bool image_crop(struct slp_image *image, const uint32_t new_width, const uint32_t new_height, const uint32_t offset_width, const uint32_t offset_height) {
-    if (__builtin_expect(offset_width + new_width > image->width || offset_height + new_height > image->height, 0)) return false;
+    if (offset_width + new_width > image->width || offset_height + new_height > image->height) return false;
 
     const uint64_t c = (uint64_t)image->channels * (uint64_t)(1 + (image->bit_depth == 16)); // sizeof 1 pixel
     const uint64_t src_stride = (uint64_t)image->width * c;
     const uint64_t dest_stride = (uint64_t)new_width * c;
 
     uint8_t* new_buffer = (uint8_t*)malloc(dest_stride * new_height);
-    if (__builtin_expect(new_buffer == NULL, 0)) return false;
+    if (new_buffer == NULL) return false;
 
     const int P = (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? (2) : (sysconf(_SC_NPROCESSORS_ONLN));
 
     struct slp_image_crop_thread_data *threads_arg = (struct slp_image_crop_thread_data*)malloc(P * sizeof(*threads_arg));
-    if (__builtin_expect(threads_arg == NULL, 0)) {
+    if (threads_arg == NULL) {
         free(new_buffer);
         return false;
     }
 
     pthread_t* threads = (pthread_t*)malloc(P * sizeof(*threads));
-    if (__builtin_expect(threads == NULL, 0)) {
+    if (threads == NULL) {
         free(new_buffer);
         free(threads_arg);
         return false;
@@ -542,7 +542,7 @@ static void* slp_image_linear_transform_thread_task(void* arg) {
 bool slp_image_linear_transform(struct slp_image *image, const double* A, const uint8_t* background) {
     // DO NOT USE FLOAT
     const double detA = A[0] * A[3] - A[1] * A[2];
-    if (__builtin_expect(detA == 0, 0)) {
+    if (detA == 0) {
         const uint64_t size = (uint64_t)image->width * (uint64_t)image->height * (uint64_t)image->channels * (1 + (image->bit_depth == 16));
         memset(image->buffer, 0, size);
         image->height = 0;
@@ -602,13 +602,13 @@ bool slp_image_linear_transform(struct slp_image *image, const double* A, const 
     const int P = (nproc <= 1) ? (2) : (nproc);
 
     pthread_t *threads = (pthread_t*)malloc(P * sizeof(*threads));
-    if (__builtin_expect(threads == NULL, 0)) {
+    if (threads == NULL) {
         free(new_buffer);
         return false;
     }
 
     struct slp_image_linear_transform_thread_arg *threads_arg = (struct slp_image_linear_transform_thread_arg*)malloc(P * sizeof(*threads_arg));
-    if (__builtin_expect(threads_arg == NULL, 0)) {
+    if (threads_arg == NULL) {
         free(new_buffer);
         free(threads);
         return false;
@@ -713,7 +713,7 @@ bool slp_image_format(struct slp_image *image) {
     const uint64_t size = (uint64_t)image->width * (uint64_t)image->height * (uint64_t)image->channels * (uint64_t)(1 + (image->bit_depth == 16));
 
     uint8_t *new_buffer = (uint8_t*)malloc(size);
-    if (__builtin_expect(new_buffer == NULL, 0)) {
+    if (new_buffer == NULL) {
         if (image->bit_depth == 8) return true;
         return false;
     }
