@@ -10,6 +10,7 @@
 
 ## Contribute
 
+- Please don't vibe coding, you can't enjoy the process if AI did it for you :)
 - I appreciate all your help
 - I will definitely respond to your pull request
 - Just freely share your idea you don't have to be formal
