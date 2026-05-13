@@ -4,5 +4,6 @@
   "dependencies": [
     "zlib-ng"
   ],
-  "license": "GPL-3.0-only"
+  "license": "GPL-3.0-only",
+  "builtin-baseline": "3426db05b996481ca31d9570f563503f14bc35ef"
 }
