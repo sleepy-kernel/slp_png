@@ -1,0 +1,7 @@
+{
+  "name": "slp_png",
+  "version": "1.0",
+  "dependencies": [
+    "zlib-ng"
+  ]
+}
