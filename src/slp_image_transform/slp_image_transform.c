@@ -28,6 +28,10 @@ limitations under the License.
 #else
 #ifdef __unix__
 #include <unistd.h>
+#else
+#ifdef __APPLE__
+#include <unistd.h>
+#endif
 #endif
 #endif
 
@@ -301,7 +305,23 @@ bool image_crop(struct slp_image *image, const uint32_t new_width, const uint32_
     uint8_t* new_buffer = (uint8_t*)malloc(dest_stride * new_height);
     if (new_buffer == NULL) return false;
 
-    const int P = (sysconf(_SC_NPROCESSORS_ONLN) <= 1) ? (2) : (sysconf(_SC_NPROCESSORS_ONLN));
+    //get number of processers
+    int nproc = 0;
+    #ifdef _WIN32
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    nproc = sysinfo.dwNumberOfProcessors;
+    #else
+    #ifdef __unix__
+    nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    #else
+    #ifdef __APPLE__
+    nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    #endif
+    #endif
+    #endif
+
+    const int P = (nproc <= 1) ? (2) : (nproc);
 
     struct slp_image_crop_thread_data *threads_arg = (struct slp_image_crop_thread_data*)malloc(P * sizeof(*threads_arg));
     if (threads_arg == NULL) {
