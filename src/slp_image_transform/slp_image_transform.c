@@ -203,7 +203,6 @@ bool slp_image_convert_to_16bit(struct slp_image *image) {
         }
         case 4: {
             #ifdef __AVX2__
-            __m256i zero = _mm256_setzero_si256();
             for (; i + 32 <= size; i += 32) {
                 __m256i in = _mm256_loadu_si256((const __m256i*)src);
                 in = _mm256_or_si256(in, _mm256_slli_epi64(in, 4));
@@ -443,7 +442,7 @@ static void* slp_image_linear_transform_thread_task(void* arg) {
 
     struct slp_image_linear_transform_thread_arg data = *(struct slp_image_linear_transform_thread_arg*)arg;
 
-    int64_t i = data.s * data.block;
+    uint64_t i = data.s * data.block;
 
     double c1 = (-i + data.vmax) * data.inverseA[1] + data.half_width;
     double c2 = (-i + data.vmax) * data.inverseA[3] - data.half_height;
@@ -822,7 +821,7 @@ bool slp_image_format(struct slp_image *image) {
         case 2: {
             uint64_t i = 0;
             #ifdef __SSE2__
-            __m128i ones = _mm_set1_epi16(0b11);
+            __m128i ones = _mm_set1_epi16(3);//0b11
             __m128i zeroes = _mm_setzero_si128();
 
             for (; i + 16 <= size; i += 16) {
@@ -873,7 +872,7 @@ bool slp_image_format(struct slp_image *image) {
         case 4: {
             uint64_t i = 0;
             #ifdef __AVX2__
-            __m256i ones = _mm256_set1_epi16(0b1111);
+            __m256i ones = _mm256_set1_epi16(0x0F);
             __m256i zeroes = _mm256_setzero_si256();
 
             for (; i + 32 <= size; i += 32) {
@@ -909,7 +908,7 @@ bool slp_image_format(struct slp_image *image) {
             }
             #endif
             for (; i < size; i++) {
-                for (int j = 1; j >= 0; j--) { *dest++ = ((*src >> (j * 4)) & 0b1111); }
+                for (int j = 1; j >= 0; j--) { *dest++ = ((*src >> (j * 4)) & 0x0F); }
                 src++;
             }
             break;
@@ -1013,7 +1012,7 @@ bool slp_image_unformat(struct slp_image *image) {
             #endif
             for (; i < size; i++) {
                 *dest = 0;
-                for (uint64_t j = 7; j >= 0; j++) *dest |= (((*src++) & 1) << j);
+                for (int64_t j = 7; j >= 0; j--) *dest |= (((*src++) & 1) << j);
                 dest++;
             }
             break;
@@ -1030,7 +1029,7 @@ bool slp_image_unformat(struct slp_image *image) {
             for (; i + 32 <= size; i += 32) {
                 __m256i in = _mm256_loadu_si256((const __m256i *)src);
 
-                in = _mm256_and_si256(in, _mm256_set1_epi8(0b11)); // mask the last 2 bit of each byte
+                in = _mm256_and_si256(in, _mm256_set1_epi8(3)); // mask the last 2 bit of each byte
 
                 __m256i bit1 = _mm256_slli_si256(_mm256_slli_epi32(_mm256_blendv_epi8(z, in, mask1), 3), 0);
                 __m256i bit2 = _mm256_slli_si256(_mm256_slli_epi32(_mm256_blendv_epi8(z, in, mask2), 2), 1);
@@ -1050,7 +1049,7 @@ bool slp_image_unformat(struct slp_image *image) {
             #endif
             for (; i < size; i++) {
                 *dest = 0;
-                for (uint64_t j = 3; j >= 0; j++) *dest |= (((*src++) & 0b11) << j);
+                for (int64_t j = 3; j >= 0; j--) *dest |= (((*src++) & 3) << j);
                 dest++;
             }
             break;
@@ -1065,7 +1064,7 @@ bool slp_image_unformat(struct slp_image *image) {
             for (; i + 32 <= size; i += 32) {
                 __m256i in = _mm256_loadu_si256((const __m256i *)src);
 
-                in = _mm256_and_si256(in, _mm256_set1_epi8(0b1111)); // mask the last 4 bit of each byte
+                in = _mm256_and_si256(in, _mm256_set1_epi8(0x0F)); // mask the last 4 bit of each byte
 
                 __m256i bit1 = _mm256_slli_si256(_mm256_slli_epi32(_mm256_blendv_epi8(z, in, mask1), 1), 0);
                 __m256i bit2 = _mm256_slli_si256(_mm256_slli_epi32(_mm256_blendv_epi8(z, in, mask2), 0), 1);
@@ -1083,7 +1082,7 @@ bool slp_image_unformat(struct slp_image *image) {
             #endif
             for (; i < size; i++) {
                 *dest = 0;
-                for (uint64_t j = 1; j >= 0; j++) *dest |= (((*src++) & 0b1111) << j);
+                for (int64_t j = 1; j >= 0; j--) *dest |= (((*src++) & 0x0F) << j);
                 dest++;
             }
             break;
@@ -1149,7 +1148,7 @@ bool slp_image_convert_G8_to_RGBA32(struct slp_image *image) {
 
     uint64_t i = 0;
     #ifdef __SSE2__
-    __m128i FF = _mm_set1_epi8(0xFF);
+    __m128i FF = _mm_set1_epi8(-1);
     for (; i + 16 <= size; i+=16) {
         __m128i in = _mm_loadu_si128((const __m128i*)(src + i));
 
@@ -1247,7 +1246,7 @@ bool slp_image_convert_G16_to_RGBA64(struct slp_image *image) {
 
     uint64_t i = 0;
     #ifdef __SSE2__
-    __m128i FF = _mm_set1_epi16(0xFFFF);
+    __m128i FF = _mm_set1_epi16(-1);
     for (; i + 8 <= src_size_in_element; i+=8) {
         __m128i in = _mm_loadu_si128((const __m128i*)(src + i));
 
