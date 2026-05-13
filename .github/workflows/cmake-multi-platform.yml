@@ -89,7 +89,7 @@ jobs:
 
     - name: Run valgrind
       if: matrix.os == 'ubuntu-latest'
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      working-directory: ${{ github.workspace }}/tests
       run: >
         valgrind
         --leak-check=full
@@ -97,4 +97,4 @@ jobs:
         --errors-for-leak-kinds=all
         --track-origins=yes
         --error-exitcode=1
-        ./test
+        ${{ steps.strings.outputs.build-output-dir }}/test
