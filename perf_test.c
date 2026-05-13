@@ -12,8 +12,8 @@
 // palette_4bit
 // 10.4-MB
 
-const char path[] = "test_images/10.4-MB.png";
-const char path_out[] = "test_images/new.png";
+const char path[] = "tests/test_images/10.4-MB.png";
+const char path_out[] = "tests/test_images/new.png";
 
 
 int main(void) {
