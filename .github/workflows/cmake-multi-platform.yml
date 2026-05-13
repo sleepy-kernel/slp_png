@@ -54,10 +54,11 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
       with:
+        vcpkgGitURL: 'https://github.com/microsoft/vcpkg.git'
+        vcpkgGitCommitId: 'ba27a182ef0c24b70b55b723605451a491cd891a'
         vcpkgJsonGlob: 'vcpkg.json'
 
 
