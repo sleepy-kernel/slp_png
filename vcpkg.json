@@ -4,6 +4,5 @@
   "dependencies": [
     "zlib-ng"
   ],
-  "license": "GPL-3.0-only",
-  "builtin-baseline": "8defa4b8bc4c35071c678e87a0e140dd433489bb"
+  "license": "Apache-2.0"
 }
