@@ -13,7 +13,14 @@ add_library("slp_png"
 
 target_include_directories("slp_png" PUBLIC include)
 
-#target_compile_options("slp_png" PUBLIC -march=native -O3)
+#target_compile_options("slp_png" PUBLIC -march=native)
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    target_compile_options("slp_png" PUBLIC -march=native)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_compile_options("slp_png" PUBLIC -march=native)
+elseif(MSVC)
+    target_compile_options("slp_png" PUBLIC /arch:AVX2)
+endif()
 
 find_package(zlib-ng CONFIG REQUIRED)
 find_package(Threads REQUIRED)
