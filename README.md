@@ -16,19 +16,18 @@
 
 
 ## Basic usage
->'''C
->#include <slp_png.h>
->#include <stdio.h>
->
->int main()
->{
->    slp_image your_image = slp_png_read("/path/to/your/image");
->    if (your_image.buffer == NULL) return 1;
->
->    int ret = slp_png_write(your_image, "/path/to/where/to/write");
->    if (ret != 0) return 1;
->
->    return 0;
->}
->
->'''
+```C
+#include <slp_png.h>
+#include <stdio.h>
+
+int main()
+{
+    slp_image your_image = slp_png_read("/path/to/your/image");
+    if (your_image.buffer == NULL) return 1;
+
+    int ret = slp_png_write(your_image, "/path/to/where/to/write");
+    if (ret != 0) return 1;
+
+    return 0;
+}
+```
