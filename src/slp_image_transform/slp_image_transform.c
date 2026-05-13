@@ -26,7 +26,9 @@ limitations under the License.
 #ifdef _WIN32
 #include <windows.h>
 #else
+#ifdef __unix__
 #include <unistd.h>
+#endif
 #endif
 
 #ifdef __AVX2__
@@ -591,12 +593,15 @@ bool slp_image_linear_transform(struct slp_image *image, const double* A, const 
     uint8_t* src = image->buffer;
 
     //get number of processers
+    int nproc = 0;
     #ifdef _WIN32
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
-    int nproc = sysinfo.dwNumberOfProcessors;
+    nproc = sysinfo.dwNumberOfProcessors;
     #else
-    int nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    #ifdef __unix__
+    nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    #endif
     #endif
 
     const int P = (nproc <= 1) ? (2) : (nproc);

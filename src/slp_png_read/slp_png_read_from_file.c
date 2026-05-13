@@ -185,7 +185,7 @@ struct slp_image slp_png_read(const char path[]) {
 
     if (slp_png_stream.buffer == NULL) {
         fclose(file);
-        slp_png_stream.bit_depth = -1;
+        slp_png_stream.bit_depth = 255;
         slp_png_stream.buffer = NULL;
         return slp_png_stream;
     }
