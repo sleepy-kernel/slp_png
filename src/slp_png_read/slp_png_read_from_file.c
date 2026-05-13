@@ -401,7 +401,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         crc = zng_crc32(crc, in + intrker, ai);
                         ftrker = data_len - ai;
                         intrker += ai;
-                        ai = 0;
+                        //ai = 0;
                         strm.avail_in = intrker;
                         strm.next_in = in;
                         do {
@@ -698,6 +698,8 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 scanline[1] = (uint8_t*)malloc(bpr);
                 if (scanline[0] == NULL || scanline[1] == NULL) {
                     slp_png_stream->bit_depth = -1;
+                    free(scanline[0]);
+                    free(scanline[1]);
                     goto cleanup;
                 }
                 
@@ -735,7 +737,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                         crc = zng_crc32(crc, in + intrker, ai);
                         ftrker = data_len - ai;
                         intrker += ai;
-                        ai = 0;
+                        //ai = 0;
                         strm.avail_in = intrker;
                         strm.next_in = in;
                         do {
