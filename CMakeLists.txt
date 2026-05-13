@@ -19,7 +19,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_compile_options("slp_png" PUBLIC -march=native)
 elseif(MSVC)
-    target_compile_options("slp_png" PUBLIC /arch:AVX2 /W4 /WX)
+    target_compile_options("slp_png" PUBLIC /arch:AVX2)
 endif()
 
 find_package(zlib-ng CONFIG REQUIRED)
