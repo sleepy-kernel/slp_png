@@ -20,8 +20,15 @@ limitations under the License.
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include <immintrin.h>
 #include <zlib-ng.h>
+
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
+
+#ifdef __SSE2__
+#include <emmintrin.h>
+#endif
 
 #define __bswap_constant_32(x)                                 \
   ((((x) & 0xff000000u) >> 24) | (((x) & 0x00ff0000u) >>  8) | \
@@ -1017,7 +1024,7 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
     switch (slp_png_stream->bit_depth) {
     case 1: {
         uint64_t i = 0;
-        #ifdef __AVX2__
+        #ifdef __SSE2__
         __m128i ones = _mm_set1_epi16(1);
         __m128i zeroes = _mm_setzero_si128();
 
@@ -1232,7 +1239,7 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
     }
     case 2: {
         uint64_t i = 0;
-        #ifdef __AVX2__
+        #ifdef __SSE2__
         __m128i ones = _mm_set1_epi16(0b11);
         __m128i zeroes = _mm_setzero_si128();
 
@@ -1344,7 +1351,7 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
     }
     case 4: {
         uint64_t i = 0;
-        #ifdef __AVX2__
+        #ifdef __SSE2__
         __m128i m0 = _mm_set1_epi8(0b11110000);
         __m128i m1 = _mm_set1_epi8(0b00001111);
         __m128i zeroes = _mm_setzero_si128();
@@ -1403,7 +1410,7 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
     }
     case 8: {
         uint64_t i = 0;
-        #ifdef __AVX2__
+        #ifdef __SSE2__
         __m128i zeroes = _mm_setzero_si128();
 
         for (; i + 16 <= bpr; i += 16) {

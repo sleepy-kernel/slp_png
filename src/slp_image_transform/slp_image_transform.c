@@ -23,7 +23,15 @@ limitations under the License.
 #include <pthread.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifdef __AVX2__
 #include <immintrin.h>
+#endif
+
+#ifdef __SSE2__
+#include <emmintrin.h>
+#endif
+
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
 static int64_t ceil__(double x);

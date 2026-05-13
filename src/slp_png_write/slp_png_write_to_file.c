@@ -21,8 +21,15 @@ limitations under the License.
 #include <stdint.h>
 #include <stdalign.h>
 #include <string.h>
-#include <immintrin.h>
 #include <zlib-ng.h>
+
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
+
+#ifdef __SSE2__
+#include <emmintrin.h>
+#endif
 
 #define __bswap_constant_32(x)                                 \
   ((((x) & 0xff000000u) >> 24) | (((x) & 0x00ff0000u) >>  8) | \
