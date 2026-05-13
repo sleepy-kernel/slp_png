@@ -64,8 +64,6 @@ static uint8_t slp_get_color_type(const uint8_t channels);
 
 static int slp_png_encode(struct slp_image *image, FILE* file);
 
-static void slp_png_unformat(void *Dest, void *Source, struct slp_image *image);
-
 static uint64_t ceil__(double x);
 
 
