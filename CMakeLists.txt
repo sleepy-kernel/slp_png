@@ -23,6 +23,8 @@ target_link_libraries("slp_png"
     PUBLIC Threads::Threads
 )
 
-add_executable("test" test.c)
-target_link_libraries("test" slp_png)
+add_executable("perf_test" perf_test.c)
+target_link_libraries("perf_test" slp_png)
 
+add_executable("test" tests/test_slp_png_read_write.c)
+target_link_libraries("test" slp_png)
