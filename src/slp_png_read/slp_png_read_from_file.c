@@ -71,7 +71,6 @@ static uint64_t ceil__(double x);
 
 // constants
 enum {
-    PNGsig  = 0x89504E470D0A1A0A,
     IHDRsig = 0x49484452,
     IDATsig = 0x49444154,
     IENDsig = 0x49454E44,
@@ -145,7 +144,7 @@ struct slp_image slp_png_read(const char path[]) {
         return slp_png_stream;
     }
 
-    if (__builtin_expect(edian_swap_u64(*(uint64_t*)(worker), is_little_edian) != PNGsig && edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != 13 && edian_swap_u32(*(uint32_t*)(worker + 12), is_little_edian) != IHDRsig, 0)) {
+    if (__builtin_expect(edian_swap_u64(*(uint64_t*)(worker), is_little_edian) != 0x89504E470D0A1A0A && edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != 13 && edian_swap_u32(*(uint32_t*)(worker + 12), is_little_edian) != IHDRsig, 0)) {
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
@@ -910,7 +909,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     goto cleanup;
                 }
 
-                if (__builtin_expect(plte_check > 1 || (data_len) % 3 != 0 || !(data_len / 3 >= 0 && data_len / 3 <= 256) || edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc_, 0)) {
+                if (__builtin_expect(plte_check > 1 || (data_len) % 3 != 0 || !(data_len / 3 <= 256) || edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc_, 0)) {
                     free(plte);
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
@@ -1245,7 +1244,7 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
     case 2: {
         uint64_t i = 0;
         #ifdef __SSE2__
-        __m128i ones = _mm_set1_epi16(0b11);
+        __m128i ones = _mm_set1_epi16(3);//0b11
         __m128i zeroes = _mm_setzero_si128();
 
         for (; i + 16 <= bpr; i += 16) {
@@ -1357,8 +1356,8 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
     case 4: {
         uint64_t i = 0;
         #ifdef __SSE2__
-        __m128i m0 = _mm_set1_epi8(0b11110000);
-        __m128i m1 = _mm_set1_epi8(0b00001111);
+        __m128i m0 = _mm_set1_epi8(-16);//0b11110000
+        __m128i m1 = _mm_set1_epi8(15); //0b00001111
         __m128i zeroes = _mm_setzero_si128();
 
         for (; i + 16 <= bpr; i += 16) {
@@ -1406,7 +1405,7 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
         #endif
         for (; i < bpr; i++) {
             for (int j = 1; j >= 0; j--) {
-                *dest = ((*src >> (j * 4)) & 0b1111);
+                *dest = ((*src >> (j * 4)) & 0x0F);
                 dest += 4;
             }
             src++;
