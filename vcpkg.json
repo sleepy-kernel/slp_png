@@ -2,7 +2,8 @@
   "name": "slppng",
   "version": "1.0",
   "dependencies": [
-    "zlib-ng"
+    "zlib-ng",
+    "pthreads"
   ],
   "license": "Apache-2.0"
 }
