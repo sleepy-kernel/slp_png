@@ -33,7 +33,6 @@ jobs:
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
-            run_valgrind: true
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
@@ -92,7 +91,7 @@ jobs:
       run: sudo apt-get install -y valgrind
 
     - name: Run valgrind
-      if: matrix.run_valgrind == true
+      if: matrix.os == 'ubuntu-latest'
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: >
         valgrind
