@@ -13,7 +13,6 @@ add_library("slp_png"
 
 target_include_directories("slp_png" PUBLIC include)
 
-#target_compile_options("slp_png" PUBLIC -march=native)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
         target_compile_options("slp_png" PUBLIC -mavx2 -msse2 -Wall -Wextra -Werror -pedantic -Wformat -Wno-c++98-compat)
