@@ -8,15 +8,6 @@
     - In the current version, as tested on my machine, deflate/inflate runtime is more than 80% of the total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime
 
 
-## Contribute
-
-- Please don't vibe coding, you can't enjoy the process if AI did it for you :)
-- I appreciate all your help
-- I will definitely respond to your pull request
-- Just freely share your idea and you don't have to be formal
-- Beginners are welcome
-
-
 ## Basic usage
 ```C
 #include <slp_png.h>
@@ -35,3 +26,32 @@ int main()
     return 0;
 }
 ```
+
+
+## Contribute
+
+- Please don't vibe coding, you can't enjoy the process if AI did it for you :)
+- I appreciate all your help
+- I will definitely respond to your pull request
+- Just freely share your idea and you don't have to be formal
+- Beginners are welcome
+
+
+## Support
+- For slp_png_read:
+    - CHUNKS:
+        - For color type 0/2/4/6: IHDR, IDAT, IEND
+        - For color type 3: IHDR, PLTE, tRNS, IDAT, IEND
+    - Color type: 0/2/3/4/6 ( notice that color type 3 will be force convert into color type 6 )
+    - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth output will stay at big edian )
+    - Compression method: 0
+    - Filter method: 0
+    - Interlace method: 0
+    
+- For slp_png_write:
+    - CHUNKS: IHDR, IDAT, IEND
+    - Color type: 0/2/4/6
+    - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth input must be big edian )
+    - Compression method: 0
+    - Filter method: 0
+    - Interlace method: 0
