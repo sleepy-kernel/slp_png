@@ -23,13 +23,23 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     endif()
 endif()
 
-find_package(zlib-ng CONFIG REQUIRED)
-find_package(Threads REQUIRED)
 
-target_link_libraries("slp_png"
-    PUBLIC zlib-ng::zlib
-    PUBLIC Threads::Threads
-)
+
+if(WIN32)
+    find_package(zlib-ng CONFIG REQUIRED)
+    find_package(PThreads4W REQUIRED)
+    target_link_libraries("slp_png"
+        PUBLIC zlib-ng::zlib
+        PUBLIC PThreads4W::PThreads4W
+    )
+else()
+    find_package(zlib-ng CONFIG REQUIRED)
+    find_package(Threads REQUIRED)
+    target_link_libraries("slp_png"
+        PUBLIC zlib-ng::zlib
+        PUBLIC Threads::Threads
+    )
+endif()
 
 
 
