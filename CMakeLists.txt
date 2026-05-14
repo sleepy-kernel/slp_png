@@ -49,4 +49,7 @@ endif()
 
 
 add_executable("test" tests/CI_TEST.c)
-target_link_libraries("test" PRIVATE slp_png)
+target_link_libraries("test"
+    PRIVATE slp_png
+    PRIVATE Threads::Threads
+)

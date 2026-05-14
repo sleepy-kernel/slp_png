@@ -91,7 +91,8 @@ int main()
     - Compression method: 0
     - Filter method: 0
     - Interlace method: 0
-    
+    - Thread-safe: this function can call by any threads, but does not automatically handle fileio conflicts
+
 - For slp_png_write:
     - CHUNKS: IHDR, IDAT, IEND
     - Color type: 0/2/4/6
@@ -100,6 +101,7 @@ int main()
     - Filter method: 0
     - Interlace method: 0
     - Deflate compression level: 6
+    - Thread-safe: this function can call by any threads, but does not automatically handle fileio conflicts
 
 
 ## Performance
