@@ -67,6 +67,8 @@ int main()
     return 0;
 }
 ```
+- NOTICE: if slp_png_read fail, your_image.bit_depth will be overwiten with a specified error code ! 
+    - See in include/slp_image.h for more details about the error code
 
 
 ## Contribute
@@ -143,5 +145,20 @@ cmake --build build && \
     - libspng: 10.4 MiB
     - slp_png: 10.7 MiB
 
-- Recommend you to run the test on your machine or even test further with tools.
-- Read the DOCUMENT.md if you have questions about slp_png achitecture or create a new issue
+- RAM usage:
+    - libspng: 33 MiB
+    - slp_png: 33 MiB
+
+- Notice that this test ran on a specific setup as listed above.
+
+## Q&A
+- slp PNG encoder use heuristic filtering
+        - Score all 5 filters (none, sub, up, avg, paeth)
+        - Per scanline
+    - Heuristic filtering is extremely cheap, if good filter is generated, deflate runtime will reduce significantly
+
+- slp PNG decoder use a fixed size buffer to read IDAT chunks
+    - No spikes in RAM usage for large IDAT
+    - size = 65536, allocated on the stack
+
+- slp PNG decoder validate all CRC32 from support chunks
