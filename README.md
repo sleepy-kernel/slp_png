@@ -2,9 +2,10 @@
 
 - AVX2, SSE2 support
 - Use zlib-ng
-- Compatibility is meant to be high such that it can run on a microcontroller (still in progress)
-    - As I cannot test with all hardware so, I'd need help in testing
-- Performance is already high
+- Compatible
+    - Meant to be high such that it can run on a microcontroller (still in progress)
+        - As I cannot test with all hardware so, I'd need help in testing
+- Efficient
     - In the current version, as tested on my machine, deflate/inflate runtime is more than 80% of the total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime
 
 
@@ -145,7 +146,7 @@ cmake --build build && \
     - libspng: 10.4 MiB
     - slp_png: 10.7 MiB
 
-- RAM usage:
+- peak RAM usage:
     - libspng: 33 MiB
     - slp_png: 33 MiB
 
