@@ -8,9 +8,45 @@
     - In the current version, as tested on my machine, deflate/inflate runtime is more than 80% of the total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime
 
 
-# Dependencies
-- zlib-ng
-- pthreads
+## include && src && dependencies
+- slp_png:
+    - include:
+        - include/slp_image.h
+        - include/slp_png_read.h
+        - include/slp_png_write/h
+    - src:
+        - src/slp_png_read/*
+        - src/slp_png_write/*
+    - dependencies:
+        - zlib-ng
+
+- slp_png_read:
+    - include:
+        - include/slp_image.h
+        - include/slp_png_read.h
+    - src:
+        - src/slp_png_read/*
+    - dependencies:
+        - zlib-ng
+
+- slp_png_write:
+    - include:
+        - include/slp_imaage.h
+        - include/slp_png_write/h
+    - src:
+        - src/slp_png_write/*
+    - dependencies:
+        - zlib-ng
+
+- slp_image_transform:
+    - include:
+        - include/slp_image.h
+        - include/slp_image_transform.h
+    - src:
+        - src/slp_image_transform/*
+    - dependencies:
+        - pthreads
+
 
 
 ## Basic usage
