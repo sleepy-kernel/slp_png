@@ -68,7 +68,7 @@ void* thread_safety_test_task(void* arg) {
 
     enum {spam = 1};
 
-    for (uint i = 0; i < spam; i++) {
+    for (uint16_t i = 0; i < spam; i++) {
 
         struct thread_safety_test_arg data = *(struct thread_safety_test_arg*)arg;
         slp_image a = slp_png_read(data.in_path);
