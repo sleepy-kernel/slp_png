@@ -31,8 +31,22 @@ target_link_libraries("slp_png"
     PUBLIC Threads::Threads
 )
 
-add_executable("perf_test" tests/perf_test.c)
-target_link_libraries("perf_test" slp_png)
 
-add_executable("test" tests/test_slp_png_read_write.c)
-target_link_libraries("test" slp_png)
+
+# tests executable
+find_package(SPNG CONFIG REQUIRED)
+
+add_executable("slp_png_perf_test" tests/perf/slp_png_perf_test.c)
+add_executable("spng_perf_test"    tests/perf/spng_perf_test.c)
+
+target_link_libraries("slp_png_perf_test" PRIVATE slp_png)
+target_link_libraries("spng_perf_test"    PRIVATE $<IF:$<TARGET_EXISTS:spng::spng>,spng::spng,spng::spng_static>)
+
+if (!MSVC)
+    target_compile_options("slp_png_perf_test" PUBLIC -march=native -mtune=native -O3)
+    target_compile_options("spng_perf_test"    PUBLIC -march=native -mtune=native -O3)
+endif()
+
+
+add_executable("test" tests/CI_TEST.c)
+target_link_libraries("test" PRIVATE slp_png)

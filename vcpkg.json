@@ -3,7 +3,8 @@
   "version": "1.0",
   "dependencies": [
     "zlib-ng",
-    "pthreads"
+    "pthreads",
+    "libspng"
   ],
   "license": "Apache-2.0"
 }

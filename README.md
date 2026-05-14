@@ -1,11 +1,16 @@
 ## This is meant to be an open-source, lightweight, modern, fast PNG codec
 
 - AVX2, SSE2 support
-- Still depends on zlib-ng
+- Use zlib-ng
 - Compatibility is meant to be high such that it can run on a microcontroller (still in progress)
     - As I cannot test with all hardware so, I'd need help in testing
 - Performance is already high
     - In the current version, as tested on my machine, deflate/inflate runtime is more than 80% of the total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime
+
+
+# Dependencies
+- zlib-ng
+- pthreads
 
 
 ## Basic usage
@@ -55,3 +60,52 @@ int main()
     - Compression method: 0
     - Filter method: 0
     - Interlace method: 0
+    - Deflate compression level: 6
+
+
+## Performance
+- OS: Archlinux
+- CPU: intel i5 12450H
+- RAM: 16GB DDR5
+
+- Test code located at: tests/perf/
+
+- Compare with libspng:x64-linux@0.7.4
+
+- Commands:
+```bash
+#! /bin/bash
+
+git clone https://github.com/slp-c/slp_png.git
+
+cd slp_png
+
+cmake -S . -B build -G Ninja \
+    -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_STANDARD=17 \
+    -DCMAKE_C_COMPILER=/usr/bin/gcc \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" && \
+
+cmake --build build && \
+
+./build/slp_png_perf_test && \
+./build/spng_perf_test
+```
+
+
+- Read time:
+    - libspng: 0.136755s
+    - slp_png: 0.099330s
+
+- Write time:
+    - libspng: 3.049917s
+    - slp_png: 0.717744s
+
+- Output file size:
+    - libspng: 10.4 MiB
+    - slp_png: 10.7 MiB
+
+- Recommend you to run the test on your machine or even test further with tools.
+- Read the DOCUMENT.md if you have questions about slp_png achitecture or create a new issue

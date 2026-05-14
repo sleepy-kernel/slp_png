@@ -39,7 +39,7 @@ int main(void) {
 
 
 
-    printf("total time: %.6f s\n", s[0] + s[1]);
+    printf("total time: %.6fs\n", s[0] + s[1]);
 
     free(a.buffer);
     return 0;
