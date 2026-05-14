@@ -89,7 +89,7 @@ jobs:
       run: ctest --build-config ${{ matrix.build_type }}
 
     - name: run clang-tidy check
-      if: matrix.c_compiler == 'clang'
+      if: matrix.c_compiler == 'clang' && matrix.os == 'ubuntu-latest'
       run: >
         clang-tidy
         -p build/
