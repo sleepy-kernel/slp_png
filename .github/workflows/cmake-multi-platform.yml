@@ -95,9 +95,7 @@ jobs:
         -p build/
         --checks='-*,clang-analyzer-*, -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling'
         --warnings-as-errors='*'
-        src/slp_image_transform/slp_image_transform.c
-        src/slp_png_read/slp_png_read_from_file.c
-        src/slp_png_write/slp_png_write_to_file.c
+        src/*/*.c
 
     - name: Install Valgrind
       if: matrix.os == 'ubuntu-latest'
