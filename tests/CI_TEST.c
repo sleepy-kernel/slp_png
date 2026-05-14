@@ -93,7 +93,7 @@ void* thread_safety_test_task(void* arg) {
 int thread_safety_test(void) {
     const char out_paths_prefix[] = "CI_TEST-%02hu.png";
 
-    enum {thread_count = 5};
+    enum {thread_count = 12};
     pthread_t threads[thread_count] = {0};
     struct thread_safety_test_arg thread_arg[thread_count] = {0};
     char out_paths_ptr[thread_count][256] = {0};
