@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <string.h>
 
 // test images name:
 // rover
@@ -26,7 +27,9 @@ int thread_safety_test(void);
 
 
 
-int main(void) {
+int main(int argc, char* argv[]) {
+    if (argc > 2) return 1;
+
     slp_image a = slp_png_read(path);
     if (a.buffer == NULL) {printf("\nread failed: %d\n", a.bit_depth);return 1;}
 
@@ -34,7 +37,7 @@ int main(void) {
 
 
     // ADD FUNCTION FOR TEST HERE //
-    thread_safety_test();
+    if (argc < 2 || strcmp(argv[0], "valgrind") == 0) thread_safety_test();
 
 
 

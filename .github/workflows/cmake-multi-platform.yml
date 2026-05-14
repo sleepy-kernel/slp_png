@@ -93,16 +93,14 @@ jobs:
       working-directory: ${{ github.workspace }}
       shell: bash
       run: >
-        shopt -s nullglob
-        &&
+        shopt -s nullglob;
         clang-tidy
         -p build/
         --checks='-*,clang-analyzer-*, -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling'
         --warnings-as-errors='*'
         src/*/*.c
-        src/*.c
-        &&
-        shopt -u nullglob
+        src/*.c;
+        shopt -u nullglob;
 
     - name: Install Valgrind
       if: matrix.os == 'ubuntu-latest'
@@ -118,7 +116,7 @@ jobs:
         --errors-for-leak-kinds=all
         --track-origins=yes
         --error-exitcode=1
-        ${{ steps.strings.outputs.build-output-dir }}/test
+        ${{ steps.strings.outputs.build-output-dir }}/test valgrind
 
     - name: Run CI test
       if: matrix.os != 'ubuntu-latest'
@@ -129,9 +127,12 @@ jobs:
       shell: bash
       working-directory: ${{ github.workspace }}
       run: >
-        shopt -s nullglob
+        shopt -s nullglob;
         for file in CI_TEST-*.png; do
-          cmp $file CI_TEST.png
-        done
-        shopt -u nullglob
-
+            cmp $file CI_TEST.png;
+            if [ $? -ne 0 ]; then
+                echo \"fail at: cmp $file CI_TEST.png\";
+                exit 1;
+            fi;
+        done;
+        shopt -u nullglob;
