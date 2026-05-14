@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
 
 
     // ADD FUNCTION FOR TEST HERE //
-    if (argc < 2 || strcmp(argv[0], "valgrind") != 0) thread_safety_test();
+    if (argc < 2 || strcmp(argv[1], "valgrind") != 0) thread_safety_test();
 
 
 
