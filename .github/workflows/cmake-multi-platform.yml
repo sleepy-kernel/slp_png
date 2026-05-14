@@ -90,12 +90,18 @@ jobs:
 
     - name: run clang-tidy check
       if: matrix.c_compiler == 'clang' && matrix.os == 'ubuntu-latest'
+      shell: bash
       run: >
+        shopt -s nullglob
+        &&
         clang-tidy
         -p build/
         --checks='-*,clang-analyzer-*, -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling'
         --warnings-as-errors='*'
         src/*/*.c
+        src/*.c
+        &&
+        shopt -u nullglob
 
     - name: Install Valgrind
       if: matrix.os == 'ubuntu-latest'
