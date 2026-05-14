@@ -64,27 +64,34 @@ struct thread_safety_test_arg {
 
 
 void* thread_safety_test_task(void* arg) {
-    struct thread_safety_test_arg data = *(struct thread_safety_test_arg*)arg;
-    slp_image a = slp_png_read(data.in_path);
-    if (a.buffer == NULL) {
-        *data.status = false;
-        return NULL;
-    }
 
-    int ret = slp_png_write(a, data.out_path);
-    if (ret != 0) {
-        *data.status = false;
-        return NULL;
-    }
-    free(a.buffer);
+    enum {spam = 1};
 
-    // validate new saved image
-    slp_image b = slp_png_read(data.in_path);
-    if (b.buffer == NULL) {
-        *data.status = false;
-        return NULL;
+    for (uint i = 0; i < spam; i++) {
+
+        struct thread_safety_test_arg data = *(struct thread_safety_test_arg*)arg;
+        slp_image a = slp_png_read(data.in_path);
+        if (a.buffer == NULL) {
+            *data.status = false;
+            return NULL;
+        }
+
+
+
+        // put more function here for thread safety check
+
+
+
+
+
+        int ret = slp_png_write(a, data.out_path);
+        if (ret != 0) {
+            *data.status = false;
+            return NULL;
+        }
+        free(a.buffer);
+
     }
-    free(b.buffer);
 
     return NULL;
 }
@@ -93,7 +100,7 @@ void* thread_safety_test_task(void* arg) {
 int thread_safety_test(void) {
     const char out_paths_prefix[] = "CI_TEST-%02hu.png";
 
-    enum {thread_count = 12};
+    enum {thread_count = 50};
     pthread_t threads[thread_count] = {0};
     struct thread_safety_test_arg thread_arg[thread_count] = {0};
     char out_paths_ptr[thread_count][256] = {0};
