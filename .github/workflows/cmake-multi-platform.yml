@@ -75,6 +75,7 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
         -S ${{ github.workspace }}
 
     - name: Build
@@ -102,3 +103,16 @@ jobs:
         --track-origins=yes
         --error-exitcode=1
         ${{ steps.strings.outputs.build-output-dir }}/test
+
+    - name: clang analyze
+      if: matrix.c_compiler == 'clang'
+      working-directory: ${{ github.workspace }}
+      run: >
+        clang --analyze
+        -Xanalyzer -analyzer-output=text
+        -I./include
+        -D_GNU_SOURCE
+        -std=c17
+        src/slp_image_transform/slp_image_transform.c
+        src/slp_png_read/slp_png_read_from_file.c
+        src/slp_png_write/slp_png_write_to_file.c
