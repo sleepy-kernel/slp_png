@@ -759,7 +759,7 @@ bool slp_image_format(struct slp_image *image) {
             __m128i zeroes = _mm_setzero_si128();
 
             for (; i + 16 <= size; i += 16) {
-                __m128i in = _mm_loadu_si128((const __m128i *)src);
+                __m128i in = _mm_loadu_si128((const __m128i *)(src + i));
 
                 __m128i in_lo = _mm_unpacklo_epi8(in, zeroes);
                 __m128i in_hi = _mm_unpackhi_epi8(in, zeroes);
@@ -828,22 +828,25 @@ bool slp_image_format(struct slp_image *image) {
                 __m128i c6 = _mm_unpackhi_epi32(b1, b3); // 0123 p2 x 4567 p2 pp5
                 __m128i c7 = _mm_unpackhi_epi32(b5, b7); // 0123 p3 x 4567 p3 pp7
 
-                _mm_storeu_si128((__m128i *)(dest + 0 * 16), c0);
-                _mm_storeu_si128((__m128i *)(dest + 1 * 16), c4);
-                _mm_storeu_si128((__m128i *)(dest + 2 * 16), c1);
-                _mm_storeu_si128((__m128i *)(dest + 3 * 16), c5);
-                _mm_storeu_si128((__m128i *)(dest + 4 * 16), c2);
-                _mm_storeu_si128((__m128i *)(dest + 5 * 16), c6);
-                _mm_storeu_si128((__m128i *)(dest + 6 * 16), c3);
-                _mm_storeu_si128((__m128i *)(dest + 7 * 16), c7);
-
-                src += 16;
-                dest += 128;
+                _mm_storeu_si128((__m128i *)(dest + i*8 + 0 * 16), c0);
+                _mm_storeu_si128((__m128i *)(dest + i*8 + 1 * 16), c4);
+                _mm_storeu_si128((__m128i *)(dest + i*8 + 2 * 16), c1);
+                _mm_storeu_si128((__m128i *)(dest + i*8 + 3 * 16), c5);
+                _mm_storeu_si128((__m128i *)(dest + i*8 + 4 * 16), c2);
+                _mm_storeu_si128((__m128i *)(dest + i*8 + 5 * 16), c6);
+                _mm_storeu_si128((__m128i *)(dest + i*8 + 6 * 16), c3);
+                _mm_storeu_si128((__m128i *)(dest + i*8 + 7 * 16), c7);
             }
             #endif
-            for (; i < size; i++) {
-                for (int j = 7; j >= 0; j--) *dest++ = ((*src >> j) & 1);
-                src++;
+            for (; i + 8 <= size; i+=8) {
+                dest[i + 0] = (src[i] >> 7) & 1;
+                dest[i + 1] = (src[i] >> 6) & 1;
+                dest[i + 2] = (src[i] >> 5) & 1;
+                dest[i + 3] = (src[i] >> 4) & 1;
+                dest[i + 4] = (src[i] >> 3) & 1;
+                dest[i + 5] = (src[i] >> 2) & 1;
+                dest[i + 6] = (src[i] >> 1) & 1;
+                dest[i + 7] = (src[i] >> 0) & 1;
             }
             break;
         }
@@ -854,7 +857,7 @@ bool slp_image_format(struct slp_image *image) {
             __m128i zeroes = _mm_setzero_si128();
 
             for (; i + 16 <= size; i += 16) {
-                __m128i in = _mm_loadu_si128((const __m128i *)src);
+                __m128i in = _mm_loadu_si128((const __m128i *)(src + i));
 
                 __m128i in_lo = _mm_unpacklo_epi8(in, zeroes);
                 __m128i in_hi = _mm_unpacklo_epi8(in, zeroes);
@@ -883,18 +886,17 @@ bool slp_image_format(struct slp_image *image) {
                 __m128i b2 = _mm_unpackhi_epi16(a0, a2); // 01 p0 x 23 p0 pp1
                 __m128i b3 = _mm_unpackhi_epi16(a1, a3); // 01 p1 x 23 p1 pp3
 
-                _mm_storeu_si128((__m128i *)(dest + 0 * 16), b0);
-                _mm_storeu_si128((__m128i *)(dest + 1 * 16), b2);
-                _mm_storeu_si128((__m128i *)(dest + 2 * 16), b1);
-                _mm_storeu_si128((__m128i *)(dest + 3 * 16), b3);
-
-                src += 16;
-                dest += 64;
+                _mm_storeu_si128((__m128i *)(dest + i*4 + 0 * 16), b0);
+                _mm_storeu_si128((__m128i *)(dest + i*4 + 1 * 16), b2);
+                _mm_storeu_si128((__m128i *)(dest + i*4 + 2 * 16), b1);
+                _mm_storeu_si128((__m128i *)(dest + i*4 + 3 * 16), b3);
             }
             #endif
-            for (; i < size; i++) {
-                for (int j = 3; j >= 0; j--) { *dest++ = ((*src >> (j * 2)) & 3); }
-                src++;
+            for (; i + 4 <= size; i+=4) {
+                dest[i + 0] = (src[i] >> 6) & 3;
+                dest[i + 1] = (src[i] >> 4) & 3;
+                dest[i + 2] = (src[i] >> 2) & 3;
+                dest[i + 3] = (src[i] >> 0) & 3;
             }
             break;
         }
@@ -905,7 +907,7 @@ bool slp_image_format(struct slp_image *image) {
             __m256i zeroes = _mm256_setzero_si256();
 
             for (; i + 32 <= size; i += 32) {
-                __m256i in = _mm256_loadu_si256((const __m256i *)src);
+                __m256i in = _mm256_loadu_si256((const __m256i *)(src + i));
 
                 __m256i in_lo = _mm256_unpacklo_epi8(in, zeroes);
                 __m256i in_hi = _mm256_unpackhi_epi8(in, zeroes);
@@ -921,24 +923,15 @@ bool slp_image_format(struct slp_image *image) {
                 __m256i a0 = _mm256_unpacklo_epi8(in0, in1); // 0 x 1 lo
                 __m256i a1 = _mm256_unpackhi_epi8(in0, in1); // 0 x 1 hi
 
-                _mm_storeu_si128((__m128i*)dest, _mm256_castsi256_si128(a0));
-                dest+=16;
-
-                _mm_storeu_si128((__m128i*)dest, _mm256_castsi256_si128(a1));
-                dest+=16;
-
-                _mm_storeu_si128((__m128i*)dest, _mm256_extracti128_si256(a0, 1));
-                dest+=16;
-
-                _mm_storeu_si128((__m128i*)dest, _mm256_extracti128_si256(a1, 1));
-                dest+=16;
-                
-                src += 32;
+                _mm_storeu_si128((__m128i*)(dest + i*2 + 0 * 16), _mm256_castsi256_si128(a0));
+                _mm_storeu_si128((__m128i*)(dest + i*2 + 1 * 16), _mm256_castsi256_si128(a1));
+                _mm_storeu_si128((__m128i*)(dest + i*2 + 2 * 16), _mm256_extracti128_si256(a0, 1));
+                _mm_storeu_si128((__m128i*)(dest + i*2 + 3 * 16), _mm256_extracti128_si256(a1, 1));
             }
             #endif
-            for (; i < size; i++) {
-                for (int j = 1; j >= 0; j--) { *dest++ = ((*src >> (j * 4)) & 0x0F); }
-                src++;
+            for (; i + 2 <= size; i+=2) {
+                dest[i + 0] = (src[i] >> 4) & 0x0F;
+                dest[i + 1] = (src[i] >> 0) & 0x0F;
             }
             break;
         }
