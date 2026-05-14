@@ -3,3 +3,4 @@ exe/
 .vscode/
 .cache/
 compile_commands.json
+manual_compile_script.sh
