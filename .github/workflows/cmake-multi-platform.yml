@@ -88,6 +88,17 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest --build-config ${{ matrix.build_type }}
 
+    - name: run clang-tidy check
+      if: matrix.c_compiler == 'clang'
+      run: >
+        clang-tidy
+        -p build/
+        --checks='-*,clang-analyzer-*'
+        --warnings-as-errors='*'
+        src/slp_image_transform/slp_image_transform.c
+        src/slp_png_read/slp_png_read_from_file.c
+        src/slp_png_write/slp_png_write_to_file.c
+
     - name: Install Valgrind
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install -y valgrind
@@ -104,15 +115,3 @@ jobs:
         --error-exitcode=1
         ${{ steps.strings.outputs.build-output-dir }}/test
 
-    - name: clang analyze
-      if: matrix.c_compiler == 'clang'
-      working-directory: ${{ github.workspace }}
-      run: >
-        clang --analyze
-        -Xanalyzer -analyzer-output=text
-        -I./include
-        -D_GNU_SOURCE
-        -std=c17
-        src/slp_image_transform/slp_image_transform.c
-        src/slp_png_read/slp_png_read_from_file.c
-        src/slp_png_write/slp_png_write_to_file.c
