@@ -91,12 +91,12 @@ jobs:
     - name: run clang-tidy check
       if: matrix.c_compiler == 'clang'
       run: >
-        clang-tidy \
-        -p build/ \
-        --checks='-*,clang-analyzer-*, -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling' \
-        --warnings-as-errors='*' \
-        src/slp_image_transform/slp_image_transform.c \
-        src/slp_png_read/slp_png_read_from_file.c \
+        clang-tidy
+        -p build/
+        --checks='-*,clang-analyzer-*, -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling'
+        --warnings-as-errors='*'
+        src/slp_image_transform/slp_image_transform.c
+        src/slp_png_read/slp_png_read_from_file.c
         src/slp_png_write/slp_png_write_to_file.c
 
     - name: Install Valgrind
