@@ -9,18 +9,18 @@
 
 
 ## include && src && dependencies
-- slp_png:
+- slp_png: read/write support
     - include:
         - include/slp_image.h
         - include/slp_png_read.h
-        - include/slp_png_write/h
+        - include/slp_png_write.h
     - src:
         - src/slp_png_read/*
         - src/slp_png_write/*
     - dependencies:
         - zlib-ng
 
-- slp_png_read:
+- slp_png_read: read only
     - include:
         - include/slp_image.h
         - include/slp_png_read.h
@@ -29,16 +29,16 @@
     - dependencies:
         - zlib-ng
 
-- slp_png_write:
+- slp_png_write: write only
     - include:
-        - include/slp_imaage.h
-        - include/slp_png_write/h
+        - include/slp_image.h
+        - include/slp_png_write.h
     - src:
         - src/slp_png_write/*
     - dependencies:
         - zlib-ng
 
-- slp_image_transform:
+- slp_image_transform: image transformation tools
     - include:
         - include/slp_image.h
         - include/slp_image_transform.h
@@ -67,7 +67,7 @@ int main()
     return 0;
 }
 ```
-- NOTICE: if slp_png_read fail, your_image.bit_depth will be overwiten with a specified error code ! 
+- NOTICE: if slp_png_read fail, your_image.bit_depth will be overwitten with a specified error code ! 
     - See in include/slp_image.h for more details about the error code
 
 
@@ -86,7 +86,7 @@ int main()
         - For color type 0/2/4/6: IHDR, IDAT, IEND
         - For color type 3: IHDR, PLTE, tRNS, IDAT, IEND
     - Color type: 0/2/3/4/6 ( notice that color type 3 will be force convert into color type 6 )
-    - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth output will stay at big edian )
+    - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth format output will stay at big-edian )
     - Compression method: 0
     - Filter method: 0
     - Interlace method: 0
@@ -94,7 +94,7 @@ int main()
 - For slp_png_write:
     - CHUNKS: IHDR, IDAT, IEND
     - Color type: 0/2/4/6
-    - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth input must be big edian )
+    - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth format input must be big-edian )
     - Compression method: 0
     - Filter method: 0
     - Interlace method: 0
@@ -152,13 +152,11 @@ cmake --build build && \
 - Notice that this test ran on a specific setup as listed above.
 
 ## Q&A
-- slp PNG encoder use heuristic filtering
-        - Score all 5 filters (none, sub, up, avg, paeth)
-        - Per scanline
+- slp PNG encoder use heuristic filtering, scoring all 5 filters (none, sub, up, avg, paeth) per scanline
     - Heuristic filtering is extremely cheap, if good filter is generated, deflate runtime will reduce significantly
 
 - slp PNG decoder use a fixed size buffer to read IDAT chunks
     - No spikes in RAM usage for large IDAT
     - size = 65536, allocated on the stack
 
-- slp PNG decoder validate all CRC32 from support chunks
+- Full CRC32 validation for all supported chunks
