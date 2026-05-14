@@ -90,6 +90,7 @@ jobs:
 
     - name: run clang-tidy check
       if: matrix.c_compiler == 'clang' && matrix.os == 'ubuntu-latest'
+      working-directory: ${{ github.workspace }}
       shell: bash
       run: >
         shopt -s nullglob
@@ -107,7 +108,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install -y valgrind
 
-    - name: Run valgrind
+    - name: Run CI test with valgrind (ubuntu only)
       if: matrix.os == 'ubuntu-latest'
       working-directory: ${{ github.workspace }}
       run: >
@@ -118,4 +119,19 @@ jobs:
         --track-origins=yes
         --error-exitcode=1
         ${{ steps.strings.outputs.build-output-dir }}/test
+
+    - name: Run CI test
+      if: matrix.os != 'ubuntu-latest'
+      working-directory: ${{ github.workspace }}
+      run: ./build/test
+    
+    - name: validate CI test output
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: >
+        shopt -s nullglob
+        for file in CI_TEST-*.png; do
+          cmp $file CI_TEST.png
+        done
+        shopt -u nullglob
 
