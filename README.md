@@ -30,6 +30,8 @@ int main()
     int ret = slp_png_write(your_image, "/path/to/where/to/write");
     if (ret != 0) return 1;
 
+    free(your_image.buffer);
+
     return 0;
 }
 ```
