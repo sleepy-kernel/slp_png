@@ -106,7 +106,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install -y valgrind
 
-    - name: Run CI test with valgrind (ubuntu only)
+    - name: Run CI test with valgrind for ubuntu
       if: matrix.os == 'ubuntu-latest'
       working-directory: ${{ github.workspace }}
       run: >
@@ -118,10 +118,15 @@ jobs:
         --error-exitcode=1
         ${{ steps.strings.outputs.build-output-dir }}/test valgrind
 
-    - name: Run CI test
-      if: matrix.os != 'ubuntu-latest'
+    - name: Run CI test for mac
+      if: matrix.os == 'macos-latest'
       working-directory: ${{ github.workspace }}
       run: ./build/test
+
+    - name: Run CI test for windows
+      if: matrix.os == 'windows-latest'
+      working-directory: ${{ github.workspace }}
+      run: ./build/Release/test.exe
     
     - name: validate CI test output
       shell: bash
