@@ -59,7 +59,14 @@ endif()
 
 
 add_executable("test" tests/CI_TEST.c)
-target_link_libraries("test"
-    PRIVATE slp_png
-    PRIVATE Threads::Threads
-)
+if(WIN32)
+    target_link_libraries("test"
+        PRIVATE slp_png
+        PRIVATE PThreads4W::PThreads4W
+    )
+else()
+    target_link_libraries("test"
+        PRIVATE slp_png
+        PRIVATE Threads::Threads
+    )
+endif()
