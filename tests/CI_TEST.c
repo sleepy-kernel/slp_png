@@ -28,8 +28,6 @@ int thread_safety_test(void);
 
 
 int main(int argc, char* argv[]) {
-    if (argc > 2) return 1;
-
     slp_image a = slp_png_read(path);
     if (a.buffer == NULL) {printf("\nread failed: %d\n", a.bit_depth);return 1;}
 
