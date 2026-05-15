@@ -88,27 +88,32 @@ int main()
     - Color type: 0/2/3/4/6
         - NOTICE that color type 3 will be force convert into RGBA32 ( color type 6, bit depth 8 )
     - Bit depth: 1/2/4/8/16
-        - NOTICE that for 16 bit depth format, output will always big-edian
+        - NOTICE that for 16 bit depth format, output is always big-edian
     - Compression method: 0
     - Filter method: 0
     - Interlace method: 0
     - Full CRC32 validation for all supported chunks
     - Use fixed size buffer for IDAT chunks decode
         - No RAM spikes when decode PNG with big IDAT
-        - Buffer size = 65536
-    - Thread-safe: this function can call by any threads, but it does not automatically handle fileIO conflicts
+        - Buffer size = 65536 bytes
 
 - For slp_png_write:
     - CHUNKS: IHDR, IDAT, IEND
     - Color type: 0/2/4/6
-    - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth format input must be big-edian )
+    - Bit depth: 1/2/4/8/16
+        - NOTICE that for 16 bit depth format, input must be big-edian
     - Compression method: 0
     - Filter method: 0
     - Interlace method: 0
     - Deflate compression level: 6
     - Heuristic filtering with all 5 filter type
         - Heuristic filtering is extremely cheap, if good filter is generated, deflate runtime will reduce significantly
+
+- For both slp_png_read and slp_png_write:
     - Thread-safe: this function can call by any threads, but it does not automatically handle fileIO conflicts
+    - Allocation, mainly malloc, stack allocation via arrays are small
+        - Specifically, total size of all array allocated on the stack is only 57 bytes
+        - Low risk of stack overflow
 
 
 ## Performance
