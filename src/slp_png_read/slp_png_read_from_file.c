@@ -301,6 +301,8 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
     const bool is_little_edian = (*(uint8_t*)(&check_if_little_edian_temp_value));
     
     uint8_t worker[12];
+    uint8_t *out = NULL;
+    uint8_t *in = NULL;
 
     uint64_t data_len = 0;
     int idat_check = 0;
@@ -362,8 +364,12 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                 uint64_t have = 0;
                 uint64_t row_produced = 0;
                 uint32_t crc = 0;
-                uint8_t out[CHUNK];
-                uint8_t in[CHUNK];
+                out = (uint8_t*)malloc(CHUNK);
+                in = (uint8_t*)malloc(CHUNK);
+                if (out == NULL || in == NULL) {
+                    slp_png_stream->bit_depth = 255;
+                    goto cleanup;
+                }
 
 
                 uint8_t* scanline[2];
@@ -517,6 +523,9 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                     goto cleanup;
                 }
 
+                free(out); out = NULL;
+                free(in); in = NULL;
+
                 break;
             }
 
@@ -545,6 +554,8 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
     }
 
 cleanup:
+    free(out);
+    free(in);
     return;
 }
 
@@ -626,6 +637,9 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
 
     uint8_t worker[12];
 
+    uint8_t *out = NULL;
+    uint8_t *in = NULL;
+
     uint64_t data_len = 0;
     int plte_check = 0;
     int idat_check = 0;
@@ -689,8 +703,12 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 uint64_t have = 0;
                 uint64_t row_produced = 0;
                 uint32_t crc = 0;
-                uint8_t out[CHUNK];
-                uint8_t in[CHUNK];
+                out = (uint8_t*)malloc(CHUNK);
+                in = (uint8_t*)malloc(CHUNK);
+                if (out == NULL || in == NULL) {
+                    slp_png_stream->bit_depth = 255;
+                    goto cleanup;
+                }
 
 
                 uint8_t* scanline[2];
@@ -875,8 +893,11 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     goto cleanup;
                 }
 
-                free(scanline[0]);
-                free(scanline[1]);
+                free(scanline[0]); scanline[0] = NULL;
+                free(scanline[1]); scanline[1] = NULL;
+
+                free(out); out = NULL;
+                free(in); in = NULL;
 
                 break;
             }
@@ -1016,8 +1037,10 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
         *im++ = palette[index * 4 + 3];
     }
 
-cleanup: 
+cleanup:
     free(palette);
+    free(out);
+    free(in);
     return;
 }
 
