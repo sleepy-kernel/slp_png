@@ -85,7 +85,7 @@ int main()
     - CHUNKS:
         - For color type 0/2/4/6: IHDR, IDAT, IEND
         - For color type 3: IHDR, PLTE, tRNS, IDAT, IEND
-    - Color type: 0/2/3/4/6 ( notice that color type 3 will be force convert into color type 6 )
+    - Color type: 0/2/3/4/6 ( notice that color type 3 will be force convert into RGBA32 - color type 6, bit depth 8 )
     - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth format output will stay at big-edian )
     - Compression method: 0
     - Filter method: 0
