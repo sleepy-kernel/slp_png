@@ -9,7 +9,7 @@
     - In the current version, as tested on my machine, deflate/inflate runtime is more than 80% of the total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime
 
 
-## include && src && dependencies
+## Project structure
 - slp_png: read/write support
     - include:
         - include/slp_image.h
@@ -73,7 +73,6 @@ int main()
 
 
 ## Contribute
-
 - Please don't vibe coding, you can't enjoy the process if AI did it for you :)
 - I appreciate all your help
 - I will definitely respond to your pull request
@@ -91,7 +90,11 @@ int main()
     - Compression method: 0
     - Filter method: 0
     - Interlace method: 0
-    - Thread-safe: this function can call by any threads, but does not automatically handle fileio conflicts
+    - Full CRC32 validation for all supported chunks
+    - Use fixed size buffer for IDAT chunks decode
+        - No RAM spikes when decode PNG with big IDAT
+        - Buffer size = 65536, allocated on the stack
+    - Thread-safe: this function can call by any threads, but it does not automatically handle fileIO conflicts
 
 - For slp_png_write:
     - CHUNKS: IHDR, IDAT, IEND
@@ -101,7 +104,9 @@ int main()
     - Filter method: 0
     - Interlace method: 0
     - Deflate compression level: 6
-    - Thread-safe: this function can call by any threads, but does not automatically handle fileio conflicts
+    - Heuristic filtering with all 5 filter type
+        - Heuristic filtering is extremely cheap, if good filter is generated, deflate runtime will reduce significantly
+    - Thread-safe: this function can call by any threads, but it does not automatically handle fileIO conflicts
 
 
 ## Performance
@@ -153,13 +158,3 @@ cmake --build build && \
     - slp_png: 33 MiB
 
 - Notice that this test ran on a specific setup as listed above.
-
-## Q&A
-- slp PNG encoder use heuristic filtering, scoring all 5 filters (none, sub, up, avg, paeth) per scanline
-    - Heuristic filtering is extremely cheap, if good filter is generated, deflate runtime will reduce significantly
-
-- slp PNG decoder use a fixed size buffer to read IDAT chunks
-    - No spikes in RAM usage for large IDAT
-    - size = 65536, allocated on the stack
-
-- Full CRC32 validation for all supported chunks
