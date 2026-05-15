@@ -289,6 +289,7 @@ no_text:
         }
 
         ret = encode_image(image, image_size, ihdr.width, ihdr.height, ihdr.color_type, ihdr.bit_depth, png_out);
+        fclose(png_out);
     }
 
     printf("total time: %.6fs\n", s[0] + s[1]);
