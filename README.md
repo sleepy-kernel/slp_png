@@ -165,3 +165,49 @@ cmake --build build && \
     - slp_png: 33 MiB
 
 - Notice that this test ran on a specific setup as listed above.
+
+
+## Manual compile guide
+- This is just how I'd build manually on *my machine*
+
+- Desktop: Archlinux
+- Pakages: glibc zlib-ng
+
+```bash
+#! /bin/bash
+set -euo pipefail
+
+git clone https://github.com/slp-c/slp_png.git
+cd slp_png
+
+project_root=$PWD
+
+mkdir build
+cd build
+
+gcc -c $project_root/src/*/*.c \
+    -I $project_root/include \
+    -march=native -mtune=native -O3
+
+ar rcs libslp_png.a slp_*.o
+
+gcc $project_root/tests/CI_TEST.c \
+    -I $project_root/include \
+    -L $project_root/build \
+    -o $project_root/build/test \
+    -lz-ng -pthread -Wl,-Bstatic -lslp_png -Wl,-Bdynamic
+
+rm slp_*.o
+
+cd $project_root
+
+./build/test
+
+rm CI_TEST-*.png CI_TEST.png
+
+echo "test success"
+
+cd ..
+
+rm -rf $project_root
+```
