@@ -218,6 +218,8 @@ int main()
             printf("last row: %u\n", row_info.row_num);
     }
 
+    fclose(png);
+
     s[0] = (double)(end - start) / CLOCKS_PER_SEC;
     printf("spng read time: %.6fs\n", s[0]);
 
