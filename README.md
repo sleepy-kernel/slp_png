@@ -85,15 +85,17 @@ int main()
     - CHUNKS:
         - For color type 0/2/4/6: IHDR, IDAT, IEND
         - For color type 3: IHDR, PLTE, tRNS, IDAT, IEND
-    - Color type: 0/2/3/4/6 ( notice that color type 3 will be force convert into RGBA32 - color type 6, bit depth 8 )
-    - Bit depth: 1/2/4/8/16 ( notice that 16 bit depth format output will stay at big-edian )
+    - Color type: 0/2/3/4/6
+        - NOTICE that color type 3 will be force convert into RGBA32 ( color type 6, bit depth 8 )
+    - Bit depth: 1/2/4/8/16
+        - NOTICE that for 16 bit depth format, output will always big-edian
     - Compression method: 0
     - Filter method: 0
     - Interlace method: 0
     - Full CRC32 validation for all supported chunks
     - Use fixed size buffer for IDAT chunks decode
         - No RAM spikes when decode PNG with big IDAT
-        - Buffer size = 65536, allocated on the stack
+        - Buffer size = 65536
     - Thread-safe: this function can call by any threads, but it does not automatically handle fileIO conflicts
 
 - For slp_png_write:
