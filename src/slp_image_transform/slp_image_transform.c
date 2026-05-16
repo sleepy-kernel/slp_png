@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <slp_image_transform.h>
-#include <slp_image.h>
+#include <slp_png.h>
 #include <stdalign.h>
 #include <stdint.h>
 #include <stdbool.h>

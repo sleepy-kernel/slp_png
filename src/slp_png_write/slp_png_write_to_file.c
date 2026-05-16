@@ -13,8 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <slp_png_write.h>
-#include <slp_image.h>
+#include <slp_png.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
