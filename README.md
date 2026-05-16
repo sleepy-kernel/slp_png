@@ -7,6 +7,7 @@
         - As I cannot test with all hardware so, I'd need help in testing
 - Efficient
     - In the current version, as tested on my machine, deflate/inflate runtime is more than 80% of the total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime
+- **NOTICE**: All this is possible because of how well-defined PNG format is
 
 
 ## Project structure
