@@ -129,22 +129,16 @@ int main()
 - Commands:
 ```bash
 #! /bin/bash
+set -euo pipefail
 
 git clone https://github.com/slp-c/slp_png.git
-
 cd slp_png
 
-cmake -S . -B build -G Ninja \
-    -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_STANDARD=17 \
-    -DCMAKE_C_COMPILER=/usr/bin/gcc \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" && \
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-cmake --build build && \
+cmake --build build
 
-./build/slp_png_perf_test && \
+./build/slp_png_perf_test
 ./build/spng_perf_test
 ```
 
@@ -168,47 +162,69 @@ cmake --build build && \
 - Notice that this test ran on a specific setup as listed above.
 
 
-## Manual compile guide
-- This is just how I'd build manually on *my machine*
-
-- Desktop: Archlinux
-- Pakages: glibc zlib-ng
+## Quick test on minimal setup
+- Platform: Linux
+- Pakages: glibc gcc zlib-ng
+- Optional pakages: valgrind
 
 ```bash
 #! /bin/bash
 set -euo pipefail
+shopt -s nullglob
 
+# clone the repo
 git clone https://github.com/slp-c/slp_png.git
 cd slp_png
-
 project_root=$PWD
 
+# manual build
 mkdir build
 cd build
-
 gcc -c $project_root/src/*/*.c \
     -I $project_root/include \
     -march=native -mtune=native -O3
 
-ar rcs libslp_png.a slp_*.o
+ar rcs libslp_png.a *.o
+rm *.o
 
-gcc $project_root/tests/CI_TEST.c \
+gcc -c $project_root/tests/perf/*.c $project_root/tests/*.c \
     -I $project_root/include \
-    -L $project_root/build \
-    -o $project_root/build/test \
-    -lz-ng -pthread -Wl,-Bstatic -lslp_png -Wl,-Bdynamic
+    -march=native -mtune=native -O3
 
-rm slp_*.o
+# run executables
+for file in $project_root/build/*.o; do
+    executable=${file%.o}
 
+    cd $project_root/build
+    gcc $file \
+        -L $project_root/build \
+        -o $executable \
+        -lz-ng -lspng -pthread -Wl,-Bstatic -lslp_png -Wl,-Bdynamic
+    
+    cd $project_root
+#uncomment if you want to test with valgrind
+#valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --track-origins=yes --error-exitcode=1 $executable valgrind > /dev/null
+    $executable
+    rm $executable
+    rm $file
+done
+
+# test output
+set +e
 cd $project_root
+for file in CI_TEST-*.png; do
+    cmp $file CI_TEST.png
+    if [ $? -ne 0 ]; then
+        echo \"fail at: cmp $file CI_TEST.png\"
+        exit 1
+    fi
+done
+set -e
 
-./build/test
-
-rm CI_TEST-*.png CI_TEST.png
-
-echo "test success"
-
-cd ..
-
+echo "
+test success"
+cd $project_root/..
 rm -rf $project_root
+
+shopt -u nullglob
 ```
