@@ -11,44 +11,23 @@
 
 
 ## Project structure
-- slp_png: read/write support
+- slp_png: PNG codec
     - include:
-        - include/slp_image.h
-        - include/slp_png_read.h
-        - include/slp_png_write.h
+        - include/slp_png.h
     - src:
         - src/slp_png_read/*
         - src/slp_png_write/*
     - dependencies:
         - zlib-ng
 
-- slp_png_read: read only
+- slp_image_transform: extra image transformation tools
     - include:
-        - include/slp_image.h
-        - include/slp_png_read.h
-    - src:
-        - src/slp_png_read/*
-    - dependencies:
-        - zlib-ng
-
-- slp_png_write: write only
-    - include:
-        - include/slp_image.h
-        - include/slp_png_write.h
-    - src:
-        - src/slp_png_write/*
-    - dependencies:
-        - zlib-ng
-
-- slp_image_transform: image transformation tools
-    - include:
-        - include/slp_image.h
+        - include/slp_png.h
         - include/slp_image_transform.h
     - src:
         - src/slp_image_transform/*
     - dependencies:
         - pthreads
-
 
 
 ## Basic usage
