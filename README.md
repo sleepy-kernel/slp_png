@@ -221,6 +221,7 @@ for file in CI_TEST-*.png; do
 done
 set -e
 
+# clean up
 echo "
 test success"
 cd $project_root/..
