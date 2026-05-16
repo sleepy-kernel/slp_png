@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
-#include "slp_image.h"
+#include <slp_png.h>
 
 
 bool slp_image_convert_to_8bit(struct slp_image *image);
