@@ -560,13 +560,13 @@ static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const 
         }
         case 1: {
             memcpy(scanline[1], buffer, bpp);
-            for (uint64_t i = bpp; i < bpr; i++) scanline[1][i] = buffer[i] + scanline[1][i - bpp];
+            for (size_t i = bpp; i < bpr; i++) scanline[1][i] = buffer[i] + scanline[1][i - bpp];
             break;
         }
         case 2: {
             if (imtrker == 0) memcpy(scanline[1], buffer, bpr);
             else {
-                uint64_t i = 0;
+                size_t i = 0;
                 #ifdef __AVX2__
                 for (; i + 32 <= bpr; i += 32) {
                     __m256i raw = _mm256_loadu_si256((const __m256i *)(buffer + i));
@@ -581,10 +581,10 @@ static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const 
         case 3: {
             if (imtrker == 0) {
                 memcpy(scanline[1], buffer, bpp);
-                for (uint64_t i = bpp; i < bpr; i++) scanline[1][i] = buffer[i] + (scanline[1][i - bpp] >> 1);
+                for (size_t i = bpp; i < bpr; i++) scanline[1][i] = buffer[i] + (scanline[1][i - bpp] >> 1);
             }
             else {
-                uint64_t i = 0;
+                size_t i = 0;
                 for (; i < bpp; i++) scanline[1][i] = buffer[i] + ((scanline[0][i]) >> 1);
                 for (; i < bpr; i++) scanline[1][i] = buffer[i] + ((scanline[0][i] + scanline[1][i - bpp]) >> 1);
             }
@@ -593,10 +593,10 @@ static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const 
         case 4: {
             if (imtrker == 0) {
                 memcpy(scanline[1], buffer, bpp);
-                for (uint64_t i = bpp; i < bpr; i++) scanline[1][i] = buffer[i] + scanline[1][i - bpp];
+                for (size_t i = bpp; i < bpr; i++) scanline[1][i] = buffer[i] + scanline[1][i - bpp];
             }
             else {
-                uint64_t i = 0;
+                size_t i = 0;
                 for (; i < bpp; i++) scanline[1][i] = buffer[i] + scanline[0][i];
                 for (; i < bpr; i++) {
                     int p = scanline[1][i - bpp] + scanline[0][i] - scanline[0][i - bpp];
@@ -1036,10 +1036,10 @@ cleanup:
 
 
 
-static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *slp_png_stream, const uint64_t bpr, const uint64_t imtrker) {
+static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *slp_png_stream, const size_t bpr, const size_t imtrker) {
     
     uint8_t *src = buffer;
-    uint8_t *dest = slp_png_stream->buffer + imtrker * (uint64_t)(slp_png_stream->width) * (uint64_t)(slp_png_stream->channels);
+    uint8_t *dest = slp_png_stream->buffer + imtrker * (size_t)(slp_png_stream->width) * (slp_png_stream->channels);
 
     size_t i = 0;
     switch (slp_png_stream->bit_depth) {
