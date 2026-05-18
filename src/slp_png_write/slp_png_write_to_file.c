@@ -17,6 +17,7 @@ limitations under the License.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdalign.h>
 #include <string.h>
@@ -62,7 +63,7 @@ static uint8_t slp_get_color_type(const uint8_t channels);
 
 static int slp_png_encode(struct slp_image *image, FILE* file);
 
-static uint64_t ceil__(double x);
+static size_t ceil__(double x);
 
 
 
@@ -216,16 +217,16 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
     uint16_t random_value_for_edian_test = 1;
     const bool is_little_edian = *(uint8_t*)(&random_value_for_edian_test);
 
-    const uint64_t width = image->width;
-    const uint64_t height = image->height;
-    const uint64_t channels = image->channels;
-    const uint64_t bit_depth = image->bit_depth;
+    const size_t width = image->width;
+    const size_t height = image->height;
+    const size_t channels = image->channels;
+    const size_t bit_depth = image->bit_depth;
 
-    const uint64_t bpp = channels * (uint64_t)(1 + (bit_depth == 16));
-    const uint64_t bpr = ceil__(((double)width * channels * bit_depth) / 8.0);// bytes per row
+    const size_t bpp = channels * (1 + (bit_depth == 16));
+    const size_t bpr = ceil__(((double)width * channels * bit_depth) / 8.0);// bytes per row
 
-    uint64_t have = 0;
-    uint64_t data_len = 0;
+    size_t have = 0;
+    size_t data_len = 0;
     uint8_t filter_type = 1;
 
     // pointers declare
@@ -281,7 +282,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
         goto cleanup;
     }
     strm.avail_out = CHUNK;
-    for (uint64_t i = 0; i < height; i++)
+    for (size_t i = 0; i < height; i++)
     {
         int64_t filter_scores[5] = {0};
 
@@ -289,9 +290,9 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
         {
             uint8_t *raw = image_buffer;
 
-            for (uint64_t j = 0; j < bpp; j++) filter_buffers[1][j+1] = raw[j];
+            for (size_t j = 0; j < bpp; j++) filter_buffers[1][j+1] = raw[j];
 
-            for (uint64_t j = bpp; j < bpr; j++) filter_buffers[1][j+1] = raw[j] - raw[j-bpp];
+            for (size_t j = bpp; j < bpr; j++) filter_buffers[1][j+1] = raw[j] - raw[j-bpp];
 
             for (int j = 0; j < 5; j++) filter_scores[i] = 1000;
             filter_scores[1] = 0;
@@ -299,7 +300,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
         else {
             uint8_t *raw = image_buffer + i * bpr;
 
-            uint64_t j = 0;
+            size_t j = 0;
             for (; j < bpp; j++) {
                 filter_buffers[0][j+1] = raw[j];
                 filter_buffers[1][j+1] = raw[j];
@@ -410,11 +411,11 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
             _mm256_store_si256((__m256i *)tmp3, avgSum);
             _mm256_store_si256((__m256i *)tmp4, paethSum);
 
-            for (uint64_t u = 0; u < 4; u++) filter_scores[0] += tmp0[u];
-            for (uint64_t u = 0; u < 4; u++) filter_scores[1] += tmp1[u];
-            for (uint64_t u = 0; u < 4; u++) filter_scores[2] += tmp2[u];
-            for (uint64_t u = 0; u < 4; u++) filter_scores[3] += tmp3[u];
-            for (uint64_t u = 0; u < 4; u++) filter_scores[4] += tmp4[u];
+            for (size_t u = 0; u < 4; u++) filter_scores[0] += tmp0[u];
+            for (size_t u = 0; u < 4; u++) filter_scores[1] += tmp1[u];
+            for (size_t u = 0; u < 4; u++) filter_scores[2] += tmp2[u];
+            for (size_t u = 0; u < 4; u++) filter_scores[3] += tmp3[u];
+            for (size_t u = 0; u < 4; u++) filter_scores[4] += tmp4[u];
             #endif
 
             for (; j < bpr; j++)
@@ -573,8 +574,8 @@ cleanup:
 
 
 // x must >= 0
-static inline uint64_t ceil__(double x) {
-    uint64_t a = (uint64_t)x;
+static inline size_t ceil__(double x) {
+    size_t a = (size_t)x;
     return a + (x > a);
 }
 

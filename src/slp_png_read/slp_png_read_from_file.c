@@ -52,18 +52,18 @@ limitations under the License.
 static int slp_png_get_channels(int color_type, int bit_depth);
 
 
-static int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const uint64_t bpp, const uint64_t bpr, const uint64_t imtrker); // defilter engine, using scanline[0] as the up scanline and scanline[1] as the stream scanline each time
+static int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const size_t bpp, const size_t bpr, const size_t imtrker); // defilter engine, using scanline[0] as the up scanline and scanline[1] as the stream scanline each time
 
 //
-static void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, uint64_t file_size);
+static void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size);
 
 //
-static void slp_png_colortype3_decode(struct slp_image *slp_png_stream, FILE *file, uint64_t file_size);
+static void slp_png_colortype3_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size);
 
 
-static void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *slp_png_stream, const uint64_t bpr, const uint64_t imtrker);
+static void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *slp_png_stream, const size_t bpr, const size_t imtrker);
 
-static uint64_t ceil__(double x);
+static size_t ceil__(double x);
 
 
 
@@ -170,7 +170,7 @@ struct slp_image slp_png_read(const char path[]) {
         return slp_png_stream;
     }
 
-    const size_t size = (uint64_t)width * height * channels * (1 + (bit_depth == 16));
+    const size_t size = (size_t)width * height * channels * (1 + (bit_depth == 16));
 
     slp_png_stream.buffer = (uint8_t*)malloc(size);
 
@@ -285,7 +285,7 @@ static inline int slp_png_get_channels(int color_type, int bit_depth) {
 
 
 //
-static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, uint64_t file_size) {
+static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size) {
 
     uint16_t check_if_little_edian_temp_value = 1;
     const bool is_little_edian = (*(uint8_t*)(&check_if_little_edian_temp_value));
@@ -294,12 +294,12 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
     uint8_t *out = NULL;
     uint8_t *in = NULL;
 
-    uint64_t data_len = 0;
+    size_t data_len = 0;
     int idat_check = 0;
     int iend_check = 0;
 
-    const uint64_t bpp = slp_png_stream->channels * (slp_png_stream->bit_depth == 16 ? 2 : 1);
-    const uint64_t bpr = ceil__(((double)slp_png_stream->width * slp_png_stream->channels * slp_png_stream->bit_depth) / 8.0);
+    const size_t bpp = slp_png_stream->channels * (slp_png_stream->bit_depth == 16 ? 2 : 1);
+    const size_t bpr = ceil__(((double)slp_png_stream->width * slp_png_stream->channels * slp_png_stream->bit_depth) / 8.0);
 
     //
     do {
@@ -346,13 +346,13 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                 }
 
 
-                uint64_t imtrker = 0;
-                uint64_t ai = CHUNK;
-                uint64_t ftrker = 0;
-                uint64_t intrker = 0;
-                uint64_t offset = 0;
-                uint64_t have = 0;
-                uint64_t row_produced = 0;
+                size_t imtrker = 0;
+                size_t ai = CHUNK;
+                size_t ftrker = 0;
+                size_t intrker = 0;
+                size_t offset = 0;
+                size_t have = 0;
+                size_t row_produced = 0;
                 uint32_t crc = 0;
                 out = (uint8_t*)malloc(CHUNK);
                 in = (uint8_t*)malloc(CHUNK);
@@ -413,7 +413,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                                 }
                                 row_produced = (have / (bpr + 1));
                                 offset = (have - row_produced * (bpr + 1));
-                                for (uint64_t i = 0; i < row_produced; i++) {
+                                for (size_t i = 0; i < row_produced; i++) {
 
                                     // defilter to scanline[1] from buffer and scanline[0]
                                     if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
@@ -490,7 +490,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                     }
                     row_produced = (have / (bpr + 1));
                     offset = have - row_produced * (bpr + 1);
-                    for (uint64_t i = 0; i < row_produced; i++) {
+                    for (size_t i = 0; i < row_produced; i++) {
 
                         // defilter to scanline[1] from buffer and scanline[0]
                         if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
@@ -536,7 +536,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
             }
         }
 
-    } while ((uint64_t)(ftell(file)) <= (file_size - 12) && iend_check == 0);
+    } while ((size_t)ftell(file) <= (file_size - 12) && iend_check == 0);
 
     if (iend_check == 0) {
         slp_png_stream->bit_depth = 2;
@@ -551,7 +551,7 @@ cleanup:
 
 
 
-static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const uint64_t bpp, const uint64_t bpr, const uint64_t imtrker) {
+static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const size_t bpp, const size_t bpr, const size_t imtrker) {
     uint8_t filter = *buffer++;
     switch (filter) {
         case 0: {
@@ -620,7 +620,7 @@ static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const 
 
 
 //
-static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, FILE *file, uint64_t file_size) {
+static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size) {
 
     uint16_t check_if_little_edian_temp_value = 1;
     const bool is_little_edian = (*(uint8_t*)(&check_if_little_edian_temp_value));
@@ -630,17 +630,17 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
     uint8_t *out = NULL;
     uint8_t *in = NULL;
 
-    uint64_t data_len = 0;
+    size_t data_len = 0;
     int plte_check = 0;
     int idat_check = 0;
     int tRNS_check = 0;
     int iend_check = 0;
 
     uint8_t* palette = NULL;
-    uint64_t entries = 0;
+    size_t entries = 0;
 
-    const uint64_t bpp = 1;
-    const uint64_t bpr = ceil__(((double)slp_png_stream->width * (double)slp_png_stream->bit_depth) / (double)8);
+    const size_t bpp = 1;
+    const size_t bpr = ceil__(((double)slp_png_stream->width * (double)slp_png_stream->bit_depth) / (double)8);
 
     //
     do {
@@ -685,13 +685,13 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 }
 
 
-                uint64_t imtrker = 0;
-                uint64_t ai = CHUNK;
-                uint64_t ftrker = 0;
-                uint64_t intrker = 0;
-                uint64_t offset = 0;
-                uint64_t have = 0;
-                uint64_t row_produced = 0;
+                size_t imtrker = 0;
+                size_t ai = CHUNK;
+                size_t ftrker = 0;
+                size_t intrker = 0;
+                size_t offset = 0;
+                size_t have = 0;
+                size_t row_produced = 0;
                 uint32_t crc = 0;
                 out = (uint8_t*)malloc(CHUNK);
                 in = (uint8_t*)malloc(CHUNK);
@@ -762,7 +762,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                                 }
                                 row_produced = (have / (bpr + 1));
                                 offset = (have - row_produced * (bpr + 1));
-                                for (uint64_t i = 0; i < row_produced; i++) {
+                                for (size_t i = 0; i < row_produced; i++) {
 
                                     // defilter to scanline[1] from buffer and scanline[0]
                                     if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
@@ -852,7 +852,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     }
                     row_produced = (have / (bpr + 1));
                     offset = have - row_produced * (bpr + 1);
-                    for (uint64_t i = 0; i < row_produced; i++) {
+                    for (size_t i = 0; i < row_produced; i++) {
 
                         // defilter to scanline[1] from buffer and scanline[0]
                         if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
@@ -937,8 +937,8 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     goto cleanup;
                 }
 
-                uint64_t k = 0;
-                for (uint64_t i = 0; i < entries; i++) {
+                size_t k = 0;
+                for (size_t i = 0; i < entries; i++) {
                     palette[i * 4 + 0] = plte[k++];
                     palette[i * 4 + 1] = plte[k++];
                     palette[i * 4 + 2] = plte[k++];
@@ -986,7 +986,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     goto cleanup;
                 }
 
-                for (uint64_t i = 0; i < data_len; i++) palette[i * 4 + 3] = trns[i];
+                for (size_t i = 0; i < data_len; i++) palette[i * 4 + 3] = trns[i];
 
                 free(trns);
 
@@ -1010,7 +1010,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
             }
         }
 
-    } while ((uint64_t)(ftell(file)) <= (file_size - 12) && iend_check == 0);
+    } while ((size_t)(ftell(file)) <= (file_size - 12) && iend_check == 0);
 
     if (iend_check == 0) {
         slp_png_stream->bit_depth = 2;
@@ -1019,7 +1019,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
 
     uint8_t *im = slp_png_stream->buffer;
 
-    for (uint64_t i = 0; i < (uint64_t)(slp_png_stream->height) * (uint64_t)(slp_png_stream->width); i++) {
+    for (size_t i = 0; i < (size_t)(slp_png_stream->height) * (slp_png_stream->width); i++) {
         uint8_t index = *im;
         *im++ = palette[index * 4 + 0];
         *im++ = palette[index * 4 + 1];
@@ -1041,9 +1041,9 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
     uint8_t *src = buffer;
     uint8_t *dest = slp_png_stream->buffer + imtrker * (uint64_t)(slp_png_stream->width) * (uint64_t)(slp_png_stream->channels);
 
+    size_t i = 0;
     switch (slp_png_stream->bit_depth) {
     case 1: {
-        uint64_t i = 0;
         #ifdef __SSE2__
         __m128i ones = _mm_set1_epi16(1);
         __m128i zeroes = _mm_setzero_si128();
@@ -1258,7 +1258,6 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
         break;
     }
     case 2: {
-        uint64_t i = 0;
         #ifdef __SSE2__
         __m128i ones = _mm_set1_epi16(3);//0b11
         __m128i zeroes = _mm_setzero_si128();
@@ -1370,7 +1369,6 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
         break;
     }
     case 4: {
-        uint64_t i = 0;
         #ifdef __SSE2__
         __m128i m0 = _mm_set1_epi8(-16);//0b11110000
         __m128i m1 = _mm_set1_epi8(15); //0b00001111
@@ -1429,7 +1427,6 @@ static inline void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *
         break;
     }
     case 8: {
-        uint64_t i = 0;
         #ifdef __SSE2__
         __m128i zeroes = _mm_setzero_si128();
 
@@ -1473,7 +1470,7 @@ void slp_image_delete(struct slp_image *image) {
 
 
 // x must >= 0
-static inline uint64_t ceil__(double x) {
-    uint64_t a = (uint64_t)x;
+static inline size_t ceil__(double x) {
+    size_t a = (size_t)x;
     return a + (x > a);
 }

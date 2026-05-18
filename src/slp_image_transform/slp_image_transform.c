@@ -16,6 +16,7 @@ limitations under the License.
 #include <slp_image_transform.h>
 #include <slp_png.h>
 #include <stdalign.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -59,11 +60,11 @@ bool slp_image_convert_to_8bit(struct slp_image *image) {
     uint8_t* src = image->buffer;
     uint8_t* dest = image->buffer;
 
-    const uint64_t size = image->width * image->height * image->channels; // dest size
+    const size_t size = image->width * image->height * image->channels; // dest size
 
     switch (image->bit_depth) {
         case 1: {
-            uint64_t i = 0;
+            size_t i = 0;
             #ifdef __AVX2__
             __m256i all1 = _mm256_set1_epi8(-1);
             __m256i zero = _mm256_setzero_si256();
@@ -79,7 +80,7 @@ bool slp_image_convert_to_8bit(struct slp_image *image) {
             break;
         }
         case 2: {
-            uint64_t i = 0;
+            size_t i = 0;
             #ifdef __AVX2__
             __m256i scalar = _mm256_set1_epi8(85);
             __m256i zero = _mm256_setzero_si256();
@@ -99,7 +100,7 @@ bool slp_image_convert_to_8bit(struct slp_image *image) {
             break;
         }
         case 4: {
-            uint64_t i = 0;
+            size_t i = 0;
             #ifdef __AVX2__
             for (; i + 32 <= size; i += 32) {
                 __m256i in = _mm256_loadu_si256((const __m256i*)src);
@@ -116,7 +117,7 @@ bool slp_image_convert_to_8bit(struct slp_image *image) {
             uint16_t random_value_for_edian_test = 1;
             const bool is_little_edian = *(uint8_t*)(&random_value_for_edian_test);
 
-            uint64_t i = 0;
+            size_t i = 0;
             #ifdef __AVX2__
             __m256i zero = _mm256_setzero_si256();
             for (; i + 16 <= size; i += 16) {
@@ -148,7 +149,7 @@ bool slp_image_convert_to_8bit(struct slp_image *image) {
 // return false = malloc fail or input wrong
 bool slp_image_convert_to_16bit(struct slp_image *image) {
 
-    const uint64_t size = (uint64_t)image->height * (uint64_t)image->width * (uint64_t)image->channels; // source size
+    const size_t size = image->height * image->width * image->channels; // source size
 
     uint8_t* new_buffer = (uint8_t*)malloc(size * 2);
     if (new_buffer == NULL) {
@@ -159,7 +160,7 @@ bool slp_image_convert_to_16bit(struct slp_image *image) {
     uint8_t* src = image->buffer;
     uint16_t* dest = (uint16_t*)new_buffer;
 
-    uint64_t i = 0;
+    size_t i = 0;
     switch (image->bit_depth) {
         case 1: {
             #ifdef __AVX2__
@@ -277,24 +278,24 @@ bool slp_image_convert_to_16bit(struct slp_image *image) {
 
 
 struct slp_image_crop_thread_data {
-    uint64_t c;
-    uint64_t src_stride;
-    uint64_t dest_stride;
+    size_t c;
+    size_t src_stride;
+    size_t dest_stride;
     uint32_t offset_width;
     uint32_t offset_height;
     struct slp_image *image;
     uint8_t* new_buffer;
-    uint64_t block;
-    uint64_t last_block;
+    size_t block;
+    size_t last_block;
     int s;
     int P;
 };
 
 static void* slp_image_crop_thread_task(void *arg) {
     struct slp_image_crop_thread_data data = *(struct slp_image_crop_thread_data*)arg;
-    uint8_t* src = data.image->buffer + (uint64_t)(data.offset_height + data.s * data.block) * data.src_stride + (uint64_t)data.offset_width * data.c;
+    uint8_t* src = data.image->buffer + (size_t)(data.offset_height + data.s * data.block) * data.src_stride + (size_t)data.offset_width * data.c;
     uint8_t* dest = data.new_buffer + data.s * data.block * data.dest_stride;
-    for (uint64_t i = data.s * data.block; i < data.s * data.block + ((data.s == data.P - 1) ? data.last_block : data.block); i++) memcpy(dest + i * data.dest_stride, src + i * data.src_stride, data.dest_stride);
+    for (size_t i = data.s * data.block; i < data.s * data.block + ((data.s == data.P - 1) ? data.last_block : data.block); i++) memcpy(dest + i * data.dest_stride, src + i * data.src_stride, data.dest_stride);
     return NULL;
 }
 
@@ -302,9 +303,9 @@ static void* slp_image_crop_thread_task(void *arg) {
 bool image_crop(struct slp_image *image, const uint32_t new_width, const uint32_t new_height, const uint32_t offset_width, const uint32_t offset_height) {
     if (offset_width + new_width > image->width || offset_height + new_height > image->height) return false;
 
-    const uint64_t c = (uint64_t)image->channels * (uint64_t)(1 + (image->bit_depth == 16)); // sizeof 1 pixel
-    const uint64_t src_stride = (uint64_t)image->width * c;
-    const uint64_t dest_stride = (uint64_t)new_width * c;
+    const size_t c = (size_t)image->channels * (1 + (image->bit_depth == 16)); // sizeof 1 pixel
+    const size_t src_stride = (size_t)image->width * c;
+    const size_t dest_stride = (size_t)new_width * c;
 
     uint8_t* new_buffer = (uint8_t*)malloc(dest_stride * new_height);
     if (new_buffer == NULL) return false;
@@ -340,8 +341,8 @@ bool image_crop(struct slp_image *image, const uint32_t new_width, const uint32_
         return false;
     }
 
-    const uint64_t block = new_height / (P - 1); // P threads, P-1 work for block of scanline, the remain 1 thread works for whatever remains
-    const uint64_t last_block = new_height - block * (P-1); // == new_height % (P-1)
+    const size_t block = new_height / (P - 1); // P threads, P-1 work for block of scanline, the remain 1 thread works for whatever remains
+    const size_t last_block = new_height - block * (P-1); // == new_height % (P-1)
 
     int s = 0;
 
@@ -420,20 +421,20 @@ static int64_t ceil__(double x) {
 }
 
 
-static void slp_image_fill(uint8_t* buffer, uint64_t buffer_size, const uint8_t* pixel, const uint8_t pixel_size) {
+static void slp_image_fill(uint8_t* buffer, size_t buffer_size, const uint8_t* pixel, const uint8_t pixel_size) {
 
     memcpy(buffer, pixel, pixel_size);
 
-    uint64_t filled = pixel_size;
+    size_t filled = pixel_size;
 
     while (filled < 64 && filled < buffer_size) {
-        uint64_t copy = (filled < buffer_size - filled) ? filled : (buffer_size - filled);
+        size_t copy = (filled < buffer_size - filled) ? filled : (buffer_size - filled);
         memcpy(buffer + filled, buffer, copy);
         filled += copy;
     }
 
     while (filled < buffer_size) {
-        uint64_t copy = (filled < buffer_size - filled) ? filled : (buffer_size - filled);
+        size_t copy = (filled < buffer_size - filled) ? filled : (buffer_size - filled);
         memcpy(buffer + filled, buffer, copy);
         filled += copy;
     }
@@ -449,14 +450,14 @@ struct slp_image_linear_transform_thread_arg {
     double umin;
     double vmax;
     uint32_t new_width;
-    uint64_t pixel_size;
-    uint64_t src_stride;
-    uint64_t dst_stride;
+    size_t pixel_size;
+    size_t src_stride;
+    size_t dst_stride;
     uint8_t* new_buffer;
     uint8_t* src;
     int P;
-    uint64_t block;
-    uint64_t last_block;
+    size_t block;
+    size_t last_block;
     int s;
     bool* start_execute;
     bool* abort;
@@ -468,7 +469,7 @@ static void* slp_image_linear_transform_thread_task(void* arg) {
 
     struct slp_image_linear_transform_thread_arg data = *(struct slp_image_linear_transform_thread_arg*)arg;
 
-    uint64_t i = data.s * data.block;
+    size_t i = data.s * data.block;
 
     double c1 = (-i + data.vmax) * data.inverseA[1] + data.half_width;
     double c2 = (-i + data.vmax) * data.inverseA[3] - data.half_height;
@@ -569,7 +570,7 @@ bool slp_image_linear_transform(struct slp_image *image, const double* A, const 
     // DO NOT USE FLOAT
     const double detA = A[0] * A[3] - A[1] * A[2];
     if (detA == 0) {
-        const uint64_t size = (uint64_t)image->width * (uint64_t)image->height * (uint64_t)image->channels * (1 + (image->bit_depth == 16));
+        const size_t size = (size_t)image->width * image->height * image->channels * (1 + (image->bit_depth == 16));
         memset(image->buffer, 0, size);
         image->height = 0;
         image->width = 0;
@@ -602,10 +603,10 @@ bool slp_image_linear_transform(struct slp_image *image, const double* A, const 
     const uint32_t new_width = (uint32_t)(umax - umin + 1);
     const uint32_t new_height = (uint32_t)(vmax - vmin + 1);
 
-    const uint64_t pixel_size = image->channels * (1 + (image->bit_depth == 16)); // sizeof 1 pixel
-    const uint64_t src_stride = image->width * pixel_size; // sizeof 1 scanline
-    const uint64_t dst_stride = new_width * pixel_size; // sizeof 1 dest scanline
-    const uint64_t new_size = (uint64_t)new_width * (uint64_t)new_height * pixel_size;
+    const size_t pixel_size = image->channels * (1 + (image->bit_depth == 16)); // sizeof 1 pixel
+    const size_t src_stride = image->width * pixel_size; // sizeof 1 scanline
+    const size_t dst_stride = new_width * pixel_size; // sizeof 1 dest scanline
+    const size_t new_size = (size_t)new_width * new_height * pixel_size;
 
     uint8_t* new_buffer = (uint8_t*)malloc(new_size);
     if (new_buffer == NULL) {
@@ -643,8 +644,8 @@ bool slp_image_linear_transform(struct slp_image *image, const double* A, const 
         return false;
     }
 
-    const uint64_t block = new_height / (P - 1); // P threads, P-1 work for block of scanline, the remain 1 thread works for what remain:)
-    const uint64_t last_block = new_height - block * (P-1); // == new_height % (P-1)
+    const size_t block = new_height / (P - 1); // P threads, P-1 work for block of scanline, the remain 1 thread works for what remain:)
+    const size_t last_block = new_height - block * (P-1); // == new_height % (P-1)
     
     int s = 0;
 
@@ -739,7 +740,7 @@ bool slp_image_linear_transform(struct slp_image *image, const double* A, const 
 // only take microseconds to run
 bool slp_image_format(struct slp_image *image) {
 
-    const uint64_t size = (uint64_t)image->width * (uint64_t)image->height * (uint64_t)image->channels * (uint64_t)(1 + (image->bit_depth == 16));
+    const size_t size = (size_t)image->width * image->height * image->channels * (1 + (image->bit_depth == 16));
 
     uint8_t *new_buffer = (uint8_t*)malloc(size);
     if (new_buffer == NULL) {
@@ -982,8 +983,8 @@ bool slp_image_format(struct slp_image *image) {
 // only take microseconds to run
 bool slp_image_unformat(struct slp_image *image) {
 
-    const uint64_t size = (uint64_t)(image->height) * (uint64_t)(image->width) * (uint64_t)(image->channels) * (uint64_t)(1 + (image->bit_depth == 16));
-    const uint64_t new_size = (uint64_t)(image->height) * ceil__(((double)(image->width) * (double)(image->channels) * (double)(image->bit_depth)) / 8.0);
+    const size_t size = (size_t)(image->height) * (image->width) * (image->channels) * (1 + (image->bit_depth == 16));
+    const size_t new_size = (size_t)(image->height) * ceil__(((double)(image->width) * (double)(image->channels) * (double)(image->bit_depth)) / 8.0);
     
     uint8_t* new_buffer = (uint8_t*)malloc(new_size);
     if (new_buffer == NULL) return false;
@@ -991,7 +992,7 @@ bool slp_image_unformat(struct slp_image *image) {
     uint8_t *src = (uint8_t*)(image->buffer);
     uint8_t *dest = (uint8_t*)(new_buffer);
 
-    uint64_t i = 0;
+    size_t i = 0;
     switch (image->bit_depth) {
         case 1: {
             #ifdef __AVX2__
@@ -1158,9 +1159,9 @@ bool slp_image_unformat(struct slp_image *image) {
 bool slp_image_convert_G8_to_RGBA32(struct slp_image *image) {
     if (image->channels != 1 || image->bit_depth != 8) return false;
 
-    const uint64_t size = (uint64_t)image->width * (uint64_t)image->height;
+    const size_t size = (size_t)image->width * image->height;
 
-    uint8_t *new_buffer = (uint8_t*)malloc((uint64_t)image->width * (uint64_t)image->height * 4);
+    uint8_t *new_buffer = (uint8_t*)malloc((size_t)image->width * image->height * 4);
     if (new_buffer == NULL) {
         return false;
     }
@@ -1168,7 +1169,7 @@ bool slp_image_convert_G8_to_RGBA32(struct slp_image *image) {
     uint8_t *src = image->buffer;
     uint8_t *dest = new_buffer;
 
-    uint64_t i = 0;
+    size_t i = 0;
     #ifdef __SSE2__
     __m128i FF = _mm_set1_epi8(-1);
     for (; i + 16 <= size; i+=16) {
@@ -1211,15 +1212,15 @@ bool slp_image_convert_G8_to_RGBA32(struct slp_image *image) {
 bool slp_image_convert_GA16_to_RGBA32(struct slp_image *image) {
     if (image->channels != 2 || image->bit_depth != 8) return false;
 
-    const uint64_t src_size_in_element = (uint64_t)image->width * (uint64_t)image->height * 2;// size in element
+    const size_t src_size_in_element = (size_t)image->width * image->height * 2;// size in element
 
-    uint8_t *new_buffer = (uint8_t*)malloc((uint64_t)image->width * (uint64_t)image->height * 8);
+    uint8_t *new_buffer = (uint8_t*)malloc((size_t)image->width * image->height * 8);
     if (new_buffer == NULL) return false;
 
     uint16_t *src = (uint16_t*)image->buffer;
     uint16_t *dest = (uint16_t*)new_buffer;
 
-    uint64_t i = 0;
+    size_t i = 0;
     #ifdef __SSE2__
     __m128i FF00 = _mm_set1_epi16(0xFF);
     for (; i + 8 <= src_size_in_element; i+=8) {
@@ -1256,9 +1257,9 @@ bool slp_image_convert_GA16_to_RGBA32(struct slp_image *image) {
 bool slp_image_convert_G16_to_RGBA64(struct slp_image *image) {
     if (image->channels != 1 || image->bit_depth != 16) return false;
 
-    const uint64_t src_size_in_element = (uint64_t)image->width * (uint64_t)image->height * 2;
+    const size_t src_size_in_element = (size_t)image->width * image->height * 2;
 
-    uint8_t *new_buffer = (uint8_t*)malloc((uint64_t)image->width * (uint64_t)image->height * 8);
+    uint8_t *new_buffer = (uint8_t*)malloc((size_t)image->width * image->height * 8);
     if (new_buffer == NULL) {
         return false;
     }
@@ -1266,7 +1267,7 @@ bool slp_image_convert_G16_to_RGBA64(struct slp_image *image) {
     uint16_t *src = (uint16_t*)image->buffer;
     uint16_t *dest = (uint16_t*)new_buffer;
 
-    uint64_t i = 0;
+    size_t i = 0;
     #ifdef __SSE2__
     __m128i FF = _mm_set1_epi16(-1);
     for (; i + 8 <= src_size_in_element; i+=8) {
@@ -1308,9 +1309,9 @@ bool slp_image_convert_G16_to_RGBA64(struct slp_image *image) {
 bool slp_image_convert_GA32_to_RGBA64(struct slp_image *image) {
     if (image->channels != 2 || image->bit_depth != 16) return false;
 
-    const uint64_t src_size_in_element = (uint64_t)image->width * (uint64_t)image->height * 4;
+    const size_t src_size_in_element = (size_t)image->width * image->height * 4;
 
-    uint8_t *new_buffer = (uint8_t*)malloc((uint64_t)image->width * (uint64_t)image->height * 8);
+    uint8_t *new_buffer = (uint8_t*)malloc((size_t)image->width * image->height * 8);
     if (new_buffer == NULL) {
         return false;
     }
@@ -1318,7 +1319,7 @@ bool slp_image_convert_GA32_to_RGBA64(struct slp_image *image) {
     uint16_t *src = (uint16_t*)image->buffer;
     uint16_t *dest = (uint16_t*)new_buffer;
 
-    uint64_t i = 0;
+    size_t i = 0;
     #ifdef __SSE2__
     __m128i FF00 = _mm_set1_epi32(0xFFFF);
     for (; i + 8 <= src_size_in_element; i+=8) {
@@ -1357,7 +1358,7 @@ bool slp_image_convert_GA32_to_RGBA64(struct slp_image *image) {
 
 
 struct slp_image slp_image_copy(struct slp_image image) {
-    const uint64_t size = (uint64_t)image.width * (uint64_t)image.height * (uint64_t)image.channels * (uint64_t)(1 + (image.bit_depth == 16));
+    const size_t size = (size_t)image.width * image.height * image.channels * (1 + (image.bit_depth == 16));
     uint8_t* new_buffer = (uint8_t*)malloc(size);
     if (new_buffer == NULL) {
         image.buffer = NULL;
