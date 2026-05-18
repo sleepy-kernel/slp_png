@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <slp_png.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -69,24 +70,14 @@ static uint64_t ceil__(double x);
 
 
 // constants
-enum {
-    CHUNK = 65536,
-
-    IHDRsig = 0x49484452,
-    IDATsig = 0x49444154,
-    IENDsig = 0x49454E44,
-    PLTEsig = 0x504C5445,
-    tRNSsig = 0x74524E53
+static const size_t CHUNK = 65536;
+enum {//I could've just do IDAT = 'IDAT' which is just amazing but gcc give a warning multicharacter so I have to encode this way 
+    IHDR = 'I' << 24 | 'H' << 16 | 'D' << 8 | 'R',
+    IDAT = 'I' << 24 | 'D' << 16 | 'A' << 8 | 'T',
+    IEND = 'I' << 24 | 'E' << 16 | 'N' << 8 | 'D',
+    PLTE = 'P' << 24 | 'L' << 16 | 'T' << 8 | 'E',
+    tRNS = 't' << 24 | 'R' << 16 | 'N' << 8 | 'S'
 };
-/*
-const unsigned char PNGsig[8] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-const unsigned char IHDRsig[4] = {'I', 'H', 'D', 'R'};
-const unsigned char IDATsig[4] = {'I', 'D', 'A', 'T'};
-const unsigned char IENDsig[4] = {'I', 'E', 'N', 'D'};
-const unsigned char PLTEsig[4] = {'P', 'L', 'T', 'E'};
-const unsigned char tRNSsig[4] = {'t', 'R', 'N', 'S'};
-*/
-
 
 
 
@@ -144,7 +135,7 @@ struct slp_image slp_png_read(const char path[]) {
         return slp_png_stream;
     }
 
-    if (edian_swap_u64(*(uint64_t*)(worker), is_little_edian) != 0x89504E470D0A1A0A && edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != 13 && edian_swap_u32(*(uint32_t*)(worker + 12), is_little_edian) != IHDRsig) {
+    if (edian_swap_u64(*(uint64_t*)(worker), is_little_edian) != 0x89504E470D0A1A0A && edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != 13 && edian_swap_u32(*(uint32_t*)(worker + 12), is_little_edian) != IHDR) {
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
@@ -179,7 +170,7 @@ struct slp_image slp_png_read(const char path[]) {
         return slp_png_stream;
     }
 
-    const uint64_t size = (uint64_t)width * (uint64_t)height * (uint64_t)channels * (uint64_t)(1 + (bit_depth == 16));
+    const size_t size = (uint64_t)width * height * channels * (1 + (bit_depth == 16));
 
     slp_png_stream.buffer = (uint8_t*)malloc(size);
 
@@ -326,7 +317,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
 
 
 
-            // ADD MORE CASE HERE
+            // ADD MORE CASES HERE
 
 
 
@@ -334,7 +325,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
 
 
             // isIDAT
-            case IDATsig: {
+            case IDAT: {
                 idat_check++;
                 if (idat_check > 1) {
                     slp_png_stream->bit_depth = 2;
@@ -485,7 +476,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         zng_deflateEnd(&strm);
                         goto cleanup;
                     }
-                } while (edian_swap_u32(*(uint32_t*)(worker + 4), is_little_edian) == IDATsig);
+                } while (edian_swap_u32(*(uint32_t*)(worker + 4), is_little_edian) == IDAT);
                 strm.avail_in = intrker;
                 strm.next_in = in;
                 do {
@@ -529,7 +520,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
             }
 
             // isIEND
-            case IENDsig: {
+            case IEND: {
                 if (idat_check == 0) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
@@ -666,13 +657,13 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
 
 
 
-            // ADD MORE CASE HERE
+            // ADD MORE CASES HERE
 
 
 
 
             // isIDAT
-            case IDATsig: {
+            case IDAT: {
 
                 idat_check++;
                 if (idat_check > 1) {
@@ -843,7 +834,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                         slp_png_stream->bit_depth = 1;
                         goto cleanup;
                     }
-                } while (edian_swap_u32(*(uint32_t*)(worker + 4), is_little_edian) == IDATsig);
+                } while (edian_swap_u32(*(uint32_t*)(worker + 4), is_little_edian) == IDAT);
 
                 strm.avail_in = intrker;
                 strm.next_in = in;
@@ -902,7 +893,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
             }
 
             // PLTE
-            case PLTEsig: {
+            case PLTE: {
                 plte_check++;
                 if (plte_check > 1) {
                     slp_png_stream->bit_depth = 2;
@@ -960,7 +951,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
             }
 
             // tRNS
-            case tRNSsig: {
+            case tRNS: {
                 tRNS_check++;
                 if (tRNS_check > 1 || plte_check == 0 || plte_check == 0 || data_len > entries) {
                     slp_png_stream->bit_depth = 2;
@@ -1003,7 +994,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
             }
 
             // isIEND
-            case IENDsig: {
+            case IEND: {
                 if (idat_check == 0 || plte_check == 0) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
