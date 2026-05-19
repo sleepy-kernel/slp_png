@@ -30,22 +30,8 @@ limitations under the License.
 #include <emmintrin.h>
 #endif
 
-#define __bswap_constant_32(x)                                 \
-  ((((x) & 0xff000000u) >> 24) | (((x) & 0x00ff0000u) >>  8) | \
-   (((x) & 0x0000ff00u) <<  8) | (((x) & 0x000000ffu) << 24))
-#define __bswap_constant_64(x)              \
-   ((((x) & 0xff00000000000000ull) >> 56) | \
-    (((x) & 0x00ff000000000000ull) >> 40) | \
-    (((x) & 0x0000ff0000000000ull) >> 24) | \
-    (((x) & 0x000000ff00000000ull) >> 8)  | \
-    (((x) & 0x00000000ff000000ull) << 8)  | \
-    (((x) & 0x0000000000ff0000ull) << 24) | \
-    (((x) & 0x000000000000ff00ull) << 40) | \
-    (((x) & 0x00000000000000ffull) << 56))
-
-#define edian_swap_u32(x, is_little_edian) ((is_little_edian) ? (__bswap_constant_32(x)) : (x))
-#define edian_swap_u64(x, is_little_edian) ((is_little_edian) ? (__bswap_constant_64(x)) : (x))
-
+#define big_edian_u32(x) (((uint32_t)((x)[0]) << 24) | ((uint32_t)((x)[1]) << 16) | ((uint32_t)((x)[2]) <<  8) | ((uint32_t)((x)[3]) <<  0))
+#define big_edian_u64(x) (((uint64_t)((x)[0]) << 56) | ((uint64_t)((x)[1]) << 48) | ((uint64_t)((x)[2]) << 40) | ((uint64_t)((x)[3]) << 32) | ((uint64_t)((x)[4]) << 24) | ((uint64_t)((x)[5]) << 16) | ((uint64_t)((x)[6]) <<  8) | ((uint64_t)((x)[7]) <<  0))
 
 // helper
 // functions
@@ -71,7 +57,7 @@ static size_t ceil__(double x);
 
 // constants
 static const size_t CHUNK = 65536;
-enum {//I could've just do IDAT = 'IDAT' which is just amazing but gcc give a warning multicharacter so I have to encode this way 
+enum {
     IHDR = 'I' << 24 | 'H' << 16 | 'D' << 8 | 'R',
     IDAT = 'I' << 24 | 'D' << 16 | 'A' << 8 | 'T',
     IEND = 'I' << 24 | 'E' << 16 | 'N' << 8 | 'D',
@@ -88,9 +74,6 @@ enum {//I could've just do IDAT = 'IDAT' which is just amazing but gcc give a wa
 
 // read png from file
 struct slp_image slp_png_read(const char path[]) {
-
-    uint16_t check_if_little_edian_temp_value = 1;
-    const bool is_little_edian = (*(uint8_t*)(&check_if_little_edian_temp_value));
 
     struct slp_image slp_png_stream = {0};
     FILE* file;
@@ -135,7 +118,7 @@ struct slp_image slp_png_read(const char path[]) {
         return slp_png_stream;
     }
 
-    if (edian_swap_u64(*(uint64_t*)(worker), is_little_edian) != 0x89504E470D0A1A0A && edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != 13 && edian_swap_u32(*(uint32_t*)(worker + 12), is_little_edian) != IHDR) {
+    if (big_edian_u64(worker) != UINT64_C(0x89504E470D0A1A0A) && big_edian_u32(worker + 8) != 13 && big_edian_u32(worker + 12) != IHDR) {
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
@@ -146,15 +129,15 @@ struct slp_image slp_png_read(const char path[]) {
     crc_ = zng_crc32(crc_, worker + 12, 4);
     crc_ = zng_crc32(crc_, worker + 16, 13);
 
-    if (edian_swap_u32(*(uint32_t*)(worker + 29), is_little_edian) != crc_) {
+    if (big_edian_u32(worker + 29) != crc_) {
         fclose(file);
         slp_png_stream.bit_depth = 2;
         slp_png_stream.buffer = NULL;
         return slp_png_stream;
     }
 
-    const uint32_t width = slp_png_stream.width = edian_swap_u32(*(uint32_t*)(worker + 16), is_little_edian);
-    const uint32_t height = slp_png_stream.height = edian_swap_u32(*(uint32_t*)(worker + 20), is_little_edian);
+    const uint32_t width = slp_png_stream.width = big_edian_u32(worker + 16);
+    const uint32_t height = slp_png_stream.height = big_edian_u32(worker + 20);
     const int bit_depth = slp_png_stream.bit_depth = worker[24];
     const int color_type = worker[25];
     const int channels = slp_png_stream.channels = slp_png_get_channels(color_type, bit_depth);
@@ -286,9 +269,6 @@ static inline int slp_png_get_channels(int color_type, int bit_depth) {
 
 //
 static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size) {
-
-    uint16_t check_if_little_edian_temp_value = 1;
-    const bool is_little_edian = (*(uint8_t*)(&check_if_little_edian_temp_value));
     
     uint8_t worker[12];
     uint8_t *out = NULL;
@@ -308,8 +288,8 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
             goto cleanup;
         }
 
-        uint32_t chunk_type = edian_swap_u32(*(uint32_t*)(worker + 4), is_little_edian);
-        data_len = edian_swap_u32(*(uint32_t*)worker, is_little_edian);
+        uint32_t chunk_type = big_edian_u32(worker + 4);
+        data_len = big_edian_u32(worker);
 
         //
         switch (chunk_type) {
@@ -368,7 +348,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
 
                 // data_len, ++12, data_len,...
                 do {
-                    data_len = edian_swap_u32(*(uint32_t*)worker, is_little_edian);
+                    data_len = big_edian_u32(worker);
                     if (file_size <= data_len) {
                         slp_png_stream->bit_depth = 1;
                         zng_deflateEnd(&strm);
@@ -465,7 +445,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         goto cleanup;
                     }
 
-                    if (edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc) {
+                    if (big_edian_u32(worker + 8) != crc) {
                         slp_png_stream->bit_depth = 2;
                         zng_deflateEnd(&strm);
                         goto cleanup;
@@ -476,7 +456,7 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         zng_deflateEnd(&strm);
                         goto cleanup;
                     }
-                } while (edian_swap_u32(*(uint32_t*)(worker + 4), is_little_edian) == IDAT);
+                } while (big_edian_u32(worker + 4) == IDAT);
                 strm.avail_in = intrker;
                 strm.next_in = in;
                 do {
@@ -622,9 +602,6 @@ static inline int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const 
 //
 static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size) {
 
-    uint16_t check_if_little_edian_temp_value = 1;
-    const bool is_little_edian = (*(uint8_t*)(&check_if_little_edian_temp_value));
-
     uint8_t worker[12];
 
     uint8_t *out = NULL;
@@ -649,8 +626,8 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
             goto cleanup;
         }
 
-        uint32_t chunk_type = edian_swap_u32(*(uint32_t*)(worker + 4), is_little_edian);
-        data_len = edian_swap_u32(*(uint32_t*)worker, is_little_edian);
+        uint32_t chunk_type = big_edian_u32(worker + 4);
+        data_len = big_edian_u32(worker);
 
         //
         switch (chunk_type) {
@@ -713,7 +690,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                 
                 // data_len, ++12, data_len,...
                 do {
-                    data_len = edian_swap_u32(*(uint32_t*)worker, is_little_edian);
+                    data_len = big_edian_u32(worker);
                     if (file_size <= data_len) {
                         free(scanline[0]);
                         free(scanline[1]);
@@ -821,7 +798,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                         goto cleanup;
                     }
 
-                    if (edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc) {
+                    if (big_edian_u32(worker + 8) != crc) {
                         free(scanline[0]);
                         free(scanline[1]);
                         slp_png_stream->bit_depth = 2;
@@ -834,7 +811,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                         slp_png_stream->bit_depth = 1;
                         goto cleanup;
                     }
-                } while (edian_swap_u32(*(uint32_t*)(worker + 4), is_little_edian) == IDAT);
+                } while (big_edian_u32(worker + 4) == IDAT);
 
                 strm.avail_in = intrker;
                 strm.next_in = in;
@@ -923,7 +900,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     goto cleanup;
                 }
 
-                if (plte_check > 1 || (data_len) % 3 != 0 || !(data_len / 3 <= 256) || edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc_) {
+                if (plte_check > 1 || (data_len) % 3 != 0 || !(data_len / 3 <= 256) || big_edian_u32(worker + 8) != crc_) {
                     free(plte);
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
@@ -980,7 +957,7 @@ static inline void slp_png_colortype3_decode(struct slp_image *slp_png_stream, F
                     goto cleanup;
                 }
 
-                if (edian_swap_u32(*(uint32_t*)(worker + 8), is_little_edian) != crc_) {
+                if (big_edian_u32(worker + 8) != crc_) {
                     free(trns);
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
