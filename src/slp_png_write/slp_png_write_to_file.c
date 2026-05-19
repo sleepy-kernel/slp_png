@@ -35,8 +35,8 @@ limitations under the License.
   ((((x) & 0xff000000u) >> 24) | (((x) & 0x00ff0000u) >>  8) | \
    (((x) & 0x0000ff00u) <<  8) | (((x) & 0x000000ffu) << 24))
 
-#define edian_swap_u32(x, is_little_edian) ((is_little_edian) ? (__bswap_constant_32(x)) : (x))
-//#include <time.h>
+// return big edian in memory order
+#define big_edian_u32_in_mem(x, is_little_edian) ((is_little_edian) ? (__bswap_constant_32(x)) : (x))
 
 
 // only use for write IHDR
@@ -77,14 +77,12 @@ static size_t ceil__(double x);
 
 
 // constants
-static const unsigned char PNGsig[8] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-static const unsigned char IHDRsig[4] = {'I', 'H', 'D', 'R'};
-static const unsigned char IDATsig[4] = {'I', 'D', 'A', 'T'};
-static const unsigned char IENDsig[12] = {0, 0, 0, 0, 'I', 'E', 'N', 'D', 0xAE, 0x42, 0x60, 0x82};
+static const uint8_t PNGsig[8] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+static const uint8_t IHDRsig[4] = {'I', 'H', 'D', 'R'};
+static const uint8_t IDATsig[4] = {'I', 'D', 'A', 'T'};
+static const uint8_t IENDsig[12] = {0, 0, 0, 0, 'I', 'E', 'N', 'D', 0xAE, 0x42, 0x60, 0x82};
 static const int level = 6; // level of compression
-enum {
-    CHUNK = 65536// just use sth that fit well on cache, fwrite blocking or not depends more on the kernel
-};
+static const size_t CHUNK = 65536;// just use sth that fit well on cache, fwrite blocking or not depends more on the kernel
 
 
 
@@ -122,8 +120,8 @@ int slp_png_write(struct slp_image image, const char* path) {
 
     struct IHDR header = {0};
     
-    header.width = edian_swap_u32(image.width, is_little_edian);
-    header.height = edian_swap_u32(image.height, is_little_edian);
+    header.width = big_edian_u32_in_mem(image.width, is_little_edian);
+    header.height = big_edian_u32_in_mem(image.height, is_little_edian);
     header.bit_depth = image.bit_depth;
     header.color_type = slp_get_color_type(image.channels);
     header.compression_method = 0;
@@ -135,7 +133,13 @@ int slp_png_write(struct slp_image image, const char* path) {
         return 2;
     }
 
-    uint32_t data_len = edian_swap_u32(13, is_little_edian);
+    uint32_t crc_ = zng_crc32(0, Z_NULL, 0);
+    crc_ = zng_crc32(crc_, IHDRsig, 4);
+    crc_ = zng_crc32(crc_, (uint8_t*)(&header), 13);
+    crc_ = big_edian_u32_in_mem(crc_, is_little_edian);
+
+    uint32_t data_len = big_edian_u32_in_mem(13, is_little_edian);
+
     if (fwrite(PNGsig                    , 1, 8, file) != 8 ||
         fwrite(&data_len                 , 1, 4, file) != 4 ||
         fwrite(IHDRsig                   , 1, 4, file) != 4 ||
@@ -145,20 +149,9 @@ int slp_png_write(struct slp_image image, const char* path) {
         fwrite(&header.color_type        , 1, 1, file) != 1 ||
         fwrite(&header.compression_method, 1, 1, file) != 1 ||
         fwrite(&header.filter_method     , 1, 1, file) != 1 ||
-        fwrite(&header.interlace_method  , 1, 1, file) != 1)
+        fwrite(&header.interlace_method  , 1, 1, file) != 1 ||
+        fwrite(&crc_                     , 1, 4, file) != 4)
     {
-        fclose(file);
-        return 1;
-    }
-
-
-
-    uint32_t crc_ = zng_crc32(0, Z_NULL, 0);
-    crc_ = zng_crc32(crc_, IHDRsig, 4);
-    crc_ = zng_crc32(crc_, (uint8_t*)(&header), 13);
-    crc_ = edian_swap_u32(crc_, is_little_edian);
-
-    if (fwrite(&crc_, 1, 4, file) != 4) {
         fclose(file);
         return 1;
     }
@@ -462,12 +455,12 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
             have = CHUNK - strm.avail_out;
             if (strm.avail_out == 0) {
                 data_len = (uint32_t)(have);
-                data_len = edian_swap_u32(data_len, is_little_edian);
+                data_len = big_edian_u32_in_mem(data_len, is_little_edian);
                 memcpy(out, &data_len, 4);
                 uint32_t crc_ = zng_crc32(0, Z_NULL, 0);
                 crc_ = zng_crc32(crc_, out + 4, 4);
                 crc_ = zng_crc32(crc_, out + 8, have);
-                crc_ = edian_swap_u32(crc_, is_little_edian);
+                crc_ = big_edian_u32_in_mem(crc_, is_little_edian);
                 memcpy(out + 8 + have, &crc_, 4);
 
                 if (fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4) {
@@ -497,11 +490,11 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
         have = CHUNK - strm.avail_out;
         if (strm.avail_out == 0) {
             data_len = (uint32_t)(have);
-            data_len = edian_swap_u32(data_len, is_little_edian);
+            data_len = big_edian_u32_in_mem(data_len, is_little_edian);
             memcpy(out, &data_len, 4);
             uint32_t crc_ = zng_crc32(0, Z_NULL, 0);
             crc_ = zng_crc32(crc_, out + 4, 4 + have);
-            crc_ = edian_swap_u32(crc_, is_little_edian);
+            crc_ = big_edian_u32_in_mem(crc_, is_little_edian);
             memcpy(out + 8 + have, &crc_, 4);
             if (fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4) {
                 return_code = 1;
@@ -514,11 +507,11 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
     } while (ret != Z_STREAM_END);
 
     data_len = (uint32_t)(have);
-    data_len = edian_swap_u32(data_len, is_little_edian);
+    data_len = big_edian_u32_in_mem(data_len, is_little_edian);
     memcpy(out, &data_len, 4);
     uint32_t crc_ = zng_crc32(0, Z_NULL, 0);
     crc_ = zng_crc32(crc_, out + 4, 4 + have);
-    crc_ = edian_swap_u32(crc_, is_little_edian);
+    crc_ = big_edian_u32_in_mem(crc_, is_little_edian);
     memcpy(out + 8 + have, &crc_, 4);
     if (fwrite(out, 1, 8 + have + 4, file) != 8 + have + 4) {
         return_code = 1;
