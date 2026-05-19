@@ -41,10 +41,7 @@ static int slp_png_get_channels(int color_type, int bit_depth);
 static int slp_png_defilter(uint8_t *buffer, uint8_t* scanline[2], const size_t bpp, const size_t bpr, const size_t imtrker); // defilter engine, using scanline[0] as the up scanline and scanline[1] as the stream scanline each time
 
 //
-static void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size);
-
-//
-static void slp_png_colortype3_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size);
+static void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size, int color_type);
 
 
 static void slp_png_colortype3_unpack(uint8_t* buffer, struct slp_image *slp_png_stream, const size_t bpr, const size_t imtrker);
@@ -164,26 +161,13 @@ struct slp_image slp_png_read(const char path[]) {
         return slp_png_stream;
     }
 
-    if (color_type != 3) {
-        slp_png_decode(&slp_png_stream, file, file_size);
-
-        if (slp_png_stream.bit_depth != bit_depth) {
-            fclose(file);
-            free(slp_png_stream.buffer);
-            slp_png_stream.buffer = NULL;
-            return slp_png_stream;
-        }
-    }
-    else {
-        slp_png_colortype3_decode(&slp_png_stream, file, file_size);
-
-        if (slp_png_stream.bit_depth != bit_depth) {
-            fclose(file);
-            free(slp_png_stream.buffer);
-            slp_png_stream.buffer = NULL;
-            return slp_png_stream;
-        }
-        slp_png_stream.bit_depth = 8;
+    slp_png_decode(&slp_png_stream, file, file_size, color_type);
+    slp_png_stream.bit_depth = (color_type == 3) ? 8 : slp_png_stream.bit_depth;
+    if (slp_png_stream.bit_depth != bit_depth) {
+        fclose(file);
+        free(slp_png_stream.buffer);
+        slp_png_stream.buffer = NULL;
+        return slp_png_stream;
     }
 
 
@@ -268,15 +252,22 @@ static inline int slp_png_get_channels(int color_type, int bit_depth) {
 
 
 //
-static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size) {
+static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, size_t file_size, int color_type) {
+
+    const bool is_color_type3 = (color_type == 3);
     
     uint8_t worker[12];
     uint8_t *out = NULL;
     uint8_t *in = NULL;
 
     size_t data_len = 0;
+    int plte_check = 0;
+    int tRNS_check = 0;
     int idat_check = 0;
     int iend_check = 0;
+
+    uint8_t* palette = NULL;
+    size_t entries = 0;
 
     const size_t bpp = slp_png_stream->channels * (slp_png_stream->bit_depth == 16 ? 2 : 1);
     const size_t bpr = ceil__(((double)slp_png_stream->width * slp_png_stream->channels * slp_png_stream->bit_depth) / 8.0);
@@ -343,8 +334,21 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
 
 
                 uint8_t* scanline[2];
-                scanline[0] = slp_png_stream->buffer;
-                scanline[1] = slp_png_stream->buffer;
+                if (is_color_type3) {
+                    scanline[0] = (uint8_t*)malloc(bpr);
+                    scanline[1] = (uint8_t*)malloc(bpr);
+                    if (scanline[0] == NULL || scanline[1] == NULL) {
+                        slp_png_stream->bit_depth = 255;
+                        free(scanline[0]);
+                        free(scanline[1]);
+                        goto cleanup;
+                    }
+                }
+                else {
+                    scanline[0] = slp_png_stream->buffer;
+                    scanline[1] = slp_png_stream->buffer;
+                }
+
 
                 // data_len, ++12, data_len,...
                 do {
@@ -352,6 +356,10 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                     if (file_size <= data_len) {
                         slp_png_stream->bit_depth = 1;
                         zng_deflateEnd(&strm);
+                        if (is_color_type3) {
+                            free(scanline[0]);
+                            free(scanline[1]);
+                        }
                         goto cleanup;
                     }
 
@@ -362,6 +370,10 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         if (fread(in + intrker, 1, data_len, file) != data_len) {
                             slp_png_stream->bit_depth = 1;
                             zng_deflateEnd(&strm);
+                            if (is_color_type3) {
+                                free(scanline[0]);
+                                free(scanline[1]);
+                            }
                             goto cleanup;
                         }
                         ai -= data_len;
@@ -372,6 +384,10 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         if (fread(in + intrker, 1, ai, file) != ai) {
                             slp_png_stream->bit_depth = 1;
                             zng_deflateEnd(&strm);
+                            if (is_color_type3) {
+                                free(scanline[0]);
+                                free(scanline[1]);
+                            }
                             goto cleanup;
                         }
                         crc = zng_crc32(crc, in + intrker, ai);
@@ -389,6 +405,10 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                                 if (ret != Z_OK && ret != Z_STREAM_END) {
                                     slp_png_stream->bit_depth = 3;
                                     zng_deflateEnd(&strm);
+                                    if (is_color_type3) {
+                                        free(scanline[0]);
+                                        free(scanline[1]);
+                                    }
                                     goto cleanup;
                                 }
                                 row_produced = (have / (bpr + 1));
@@ -399,12 +419,26 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                                     if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
                                         slp_png_stream->bit_depth = 2;
                                         zng_deflateEnd(&strm);
+                                        if (is_color_type3) {
+                                            free(scanline[0]);
+                                            free(scanline[1]);
+                                        }
                                         goto cleanup;
                                     }
 
-                                    // move scanline for the next process
-                                    scanline[0] = scanline[1];
-                                    scanline[1] += bpr;
+                                    if (is_color_type3) {
+                                        // move scanline for the next process
+                                        scanline[0] = scanline[1];
+                                        scanline[1] += bpr;
+                                    }
+                                    else {
+                                        slp_png_colortype3_unpack(scanline[1], slp_png_stream, bpr, imtrker);
+
+                                        // swap scanline for the next process
+                                        uint8_t* temp = scanline[0];
+                                        scanline[0] = scanline[1];
+                                        scanline[1] = temp;
+                                    }
 
                                     imtrker++;
                                 }
@@ -416,6 +450,10 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                                 if (fread(in + intrker, 1, ai, file) != ai) {
                                     slp_png_stream->bit_depth = 1;
                                     zng_deflateEnd(&strm);
+                                    if (is_color_type3) {
+                                        free(scanline[0]);
+                                        free(scanline[1]);
+                                    }
                                     goto cleanup;
                                 }
                                 crc = zng_crc32(crc, in + intrker, ai);
@@ -429,6 +467,10 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                                 if (fread(in + intrker, 1, ftrker, file) != ftrker) {
                                     slp_png_stream->bit_depth = 1;
                                     zng_deflateEnd(&strm);
+                                    if (is_color_type3) {
+                                        free(scanline[0]);
+                                        free(scanline[1]);
+                                    }
                                     goto cleanup;
                                 }
                                 crc = zng_crc32(crc, in + intrker, ftrker);
@@ -442,18 +484,30 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                     if (fread(worker + 8, 1, 4, file) != 4) {
                         slp_png_stream->bit_depth = 1;
                         zng_deflateEnd(&strm);
+                        if (is_color_type3) {
+                            free(scanline[0]);
+                            free(scanline[1]);
+                        }
                         goto cleanup;
                     }
 
                     if (big_edian_u32(worker + 8) != crc) {
                         slp_png_stream->bit_depth = 2;
                         zng_deflateEnd(&strm);
+                        if (is_color_type3) {
+                            free(scanline[0]);
+                            free(scanline[1]);
+                        }
                         goto cleanup;
                     }
 
                     if (fread(worker, 1, 8, file) != 8) {
                         slp_png_stream->bit_depth = 1;
                         zng_deflateEnd(&strm);
+                        if (is_color_type3) {
+                            free(scanline[0]);
+                            free(scanline[1]);
+                        }
                         goto cleanup;
                     }
                 } while (big_edian_u32(worker + 4) == IDAT);
@@ -466,6 +520,10 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                     have = CHUNK - strm.avail_out;
                     if (ret != Z_OK && ret != Z_STREAM_END) {
                         slp_png_stream->bit_depth = 3;
+                        if (is_color_type3) {
+                            free(scanline[0]);
+                            free(scanline[1]);
+                        }
                         goto cleanup;
                     }
                     row_produced = (have / (bpr + 1));
@@ -475,12 +533,26 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                         // defilter to scanline[1] from buffer and scanline[0]
                         if (slp_png_defilter(out + i * (bpr + 1), scanline, bpp, bpr, imtrker) != 0) {
                             slp_png_stream->bit_depth = 2;
+                            if (is_color_type3) {
+                                free(scanline[0]);
+                                free(scanline[1]);
+                            }
                             goto cleanup;
                         }
 
-                        // move scanline for the next process
-                        scanline[0] = scanline[1];
-                        scanline[1] += bpr;
+                        if (is_color_type3) {
+                            slp_png_colortype3_unpack(scanline[1], slp_png_stream, bpr, imtrker);
+
+                            // swap scanline for the next process
+                            uint8_t* temp = scanline[0];
+                            scanline[0] = scanline[1];
+                            scanline[1] = temp;
+                        }
+                        else {
+                            // move scanline for the next process
+                            scanline[0] = scanline[1];
+                            scanline[1] += bpr;
+                        }
 
                         imtrker++;
                     }
@@ -499,9 +571,124 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
                 break;
             }
 
+            // PLTE
+            case PLTE: {
+                plte_check++;
+                if (plte_check > 1) {
+                    slp_png_stream->bit_depth = 2;
+                    goto cleanup;
+                }
+
+                uint8_t* plte = (uint8_t*)malloc(data_len);
+                if (plte == NULL) {
+                    slp_png_stream->bit_depth = -1;
+                    goto cleanup;
+                }
+
+                if (fread(plte, 1, data_len, file) != data_len) {
+                    free(plte);
+                    slp_png_stream->bit_depth = 1;
+                    goto cleanup;
+                }
+
+                uint32_t crc_ = zng_crc32(0U, Z_NULL, 0);
+                crc_ = zng_crc32(crc_, worker + 4, 4);
+                crc_ = zng_crc32(crc_, plte, data_len);
+
+
+                if (fread(worker + 8, 1, 4, file) != 4) {
+                    free(plte);
+                    slp_png_stream->bit_depth = 1;
+                    goto cleanup;
+                }
+
+                if (big_edian_u32(worker + 8) != crc_) {
+                    free(plte);
+                    slp_png_stream->bit_depth = 2;
+                    goto cleanup;
+                }
+
+                if (is_color_type3) {
+                    if ((data_len) % 3 != 0 || !(data_len / 3 <= 256)) {
+                        free(plte);
+                        slp_png_stream->bit_depth = 2;
+                        goto cleanup;
+                    }
+
+                    entries = data_len / 3;
+                    palette = (uint8_t*)malloc(entries * 4);
+                    if (palette == NULL) {
+                        free(plte);
+                        slp_png_stream->bit_depth = -1;
+                        goto cleanup;
+                    }
+
+                    size_t k = 0;
+                    for (size_t i = 0; i < entries; i++) {
+                        palette[i * 4 + 0] = plte[k++];
+                        palette[i * 4 + 1] = plte[k++];
+                        palette[i * 4 + 2] = plte[k++];
+                        palette[i * 4 + 3] = 255;
+                    }
+                }
+
+                free(plte);
+
+                break;
+            }
+
+            // tRNS
+            case tRNS: {
+                tRNS_check++;
+                if (tRNS_check > 1) {
+                    slp_png_stream->bit_depth = 2;
+                    goto cleanup;
+                }
+
+                uint8_t* trns = (uint8_t*)malloc(data_len);
+                if (trns == NULL) {
+                    slp_png_stream->bit_depth = -1;
+                    goto cleanup;
+                }
+
+                if (fread(trns, 1, data_len, file) != data_len) {
+                    free(trns);
+                    slp_png_stream->bit_depth = 1;
+                    goto cleanup;
+                }
+
+                uint32_t crc_ = zng_crc32(0U, Z_NULL, 0);
+                crc_ = zng_crc32(crc_, worker + 4, 4);
+                crc_ = zng_crc32(crc_, trns, data_len);
+
+                if (fread(worker + 8, 1, 4, file) != 4) {
+                    free(trns);
+                    slp_png_stream->bit_depth = 1;
+                    goto cleanup;
+                }
+
+                if (big_edian_u32(worker + 8) != crc_) {
+                    free(trns);
+                    slp_png_stream->bit_depth = 2;
+                    goto cleanup;
+                }
+
+                if (is_color_type3) {
+                    if (plte_check == 0 || plte_check == 0 || data_len > entries) {
+                        slp_png_stream->bit_depth = 2;
+                        goto cleanup;
+                    }
+                    for (size_t i = 0; i < data_len; i++) palette[i * 4 + 3] = trns[i];
+                }
+
+                free(trns);
+
+                break;
+            }
+
             // isIEND
             case IEND: {
-                if (idat_check == 0) {
+                if (idat_check == 0 || (is_color_type3 && plte_check == 0)) {
                     slp_png_stream->bit_depth = 2;
                     goto cleanup;
                 }
@@ -523,7 +710,18 @@ static inline void slp_png_decode(struct slp_image *slp_png_stream, FILE *file, 
         goto cleanup;
     }
 
+    if (is_color_type3) {
+        for (size_t i = 0; i < (size_t)(slp_png_stream->height) * (slp_png_stream->width); i++) {
+            uint8_t index = slp_png_stream->buffer[i * 4];
+            slp_png_stream->buffer[i * 4 + 0] = palette[index * 4 + 0];
+            slp_png_stream->buffer[i * 4 + 1] = palette[index * 4 + 1];
+            slp_png_stream->buffer[i * 4 + 2] = palette[index * 4 + 2];
+            slp_png_stream->buffer[i * 4 + 3] = palette[index * 4 + 3];
+        }
+    }
+
 cleanup:
+    free(palette);
     free(out);
     free(in);
     return;
