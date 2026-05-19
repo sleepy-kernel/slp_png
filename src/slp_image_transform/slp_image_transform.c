@@ -51,9 +51,7 @@ limitations under the License.
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-#ifndef ssize_t
-#define ssize_t ptrdiff_t
-#endif
+typedef intptr_t ssize_t;//MSVC don't have ssize_t
 
 // x must >= 0
 #define ceil__(x) (((ssize_t)(x)) + ((x) > ((ssize_t)(x))))
