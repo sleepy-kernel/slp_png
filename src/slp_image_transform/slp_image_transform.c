@@ -50,7 +50,13 @@ limitations under the License.
 #ifndef min
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
-static int64_t ceil__(double x);
+
+#ifndef ssize_t
+#define ssize_t ptrdiff_t
+#endif
+
+// x must >= 0
+#define ceil__(x) (((ssize_t)(x)) + ((x) > ((ssize_t)(x))))
 
 
 // only take miliseconds to run
@@ -414,11 +420,6 @@ bool image_crop(struct slp_image *image, const uint32_t new_width, const uint32_
 
 
 
-// x must >= 0
-static int64_t ceil__(double x) {
-    int64_t a = (int64_t)x;
-    return a + (x > a);
-}
 
 
 static void slp_image_fill(uint8_t* buffer, size_t buffer_size, const uint8_t* pixel, const uint8_t pixel_size) {
@@ -537,18 +538,18 @@ static void* slp_image_linear_transform_thread_task(void* arg) {
             }
         }
 
-        int64_t start = ceil__(max(x0, y0));
-        int64_t end = (int64_t)(min(x2, y2));
+        ssize_t start = ceil__(max(x0, y0));
+        ssize_t end = (ssize_t)(min(x2, y2));
         
         dest += start * data.pixel_size;
 
-        int64_t mid = start;
+        ssize_t mid = start;
 
         double x1 = mid * data.inverseA[0] + X;
         double y1 = -mid * data.inverseA[2] + Y;
         
         for (; mid < end; mid++) { // data
-            memcpy(dest, data.src + ((int64_t)y1) * data.src_stride + ((int64_t)x1) * data.pixel_size, data.pixel_size);
+            memcpy(dest, data.src + ((ssize_t)y1) * data.src_stride + ((ssize_t)x1) * data.pixel_size, data.pixel_size);
             dest += data.pixel_size;
             x1 += data.inverseA[0];
             y1 += -data.inverseA[2];
