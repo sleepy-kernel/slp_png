@@ -18,7 +18,7 @@ typedef struct slp_image {
     // 0 = success
     // 255 = malloc fail
     // 1 = file read failure ( file is not open, false file size )
-    // 2 = invalid file format ( file does not follow the PNG specification or Interlaced 1)
+    // 2 = invalid file format ( file does not follow the PNG specification or Interlaced 1 )
     // 3 = inflate failure ( zlib-ng inflate failure )
 }slp_image;
 

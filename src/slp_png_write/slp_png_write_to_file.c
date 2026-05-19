@@ -38,6 +38,8 @@ limitations under the License.
 // return big edian in memory order
 #define big_edian_u32_in_mem(x, is_little_edian) ((is_little_edian) ? (__bswap_constant_32(x)) : (x))
 
+// x must >= 0
+#define ceil__(x) (((size_t)(x)) + ((x) > ((size_t)(x))))
 
 // only use for write IHDR
 struct IHDR {
@@ -62,8 +64,6 @@ struct IHDR {
 static uint8_t slp_get_color_type(const uint8_t channels);
 
 static int slp_png_encode(struct slp_image *image, FILE* file);
-
-static size_t ceil__(double x);
 
 
 
@@ -242,7 +242,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
     filter_buffers[2][0] = 2;
     filter_buffers[3][0] = 3;
     filter_buffers[4][0] = 4;
-    // finish initialize variables
+    // end initialize variables
 
 
 
@@ -277,17 +277,14 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
     strm.avail_out = CHUNK;
     for (size_t i = 0; i < height; i++)
     {
-        int64_t filter_scores[5] = {0};
+        uint64_t filter_scores[5] = {0};
 
         if (i == 0)
         {
             uint8_t *raw = image_buffer;
-
-            for (size_t j = 0; j < bpp; j++) filter_buffers[1][j+1] = raw[j];
-
+            for (size_t j =   0; j < bpp; j++) filter_buffers[1][j+1] = raw[j];
             for (size_t j = bpp; j < bpr; j++) filter_buffers[1][j+1] = raw[j] - raw[j-bpp];
-
-            for (int j = 0; j < 5; j++) filter_scores[i] = 1000;
+            for (int j = 0; j < 5; j++) filter_scores[j] = 1000;
             filter_scores[1] = 0;
         }
         else {
@@ -315,7 +312,6 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
             __m256i avgSum = _mm256_setzero_si256();
             __m256i paethSum = _mm256_setzero_si256();
             __m256i zero = _mm256_setzero_si256();
-            __m256i all1 = _mm256_set1_epi16(-1);
 
 
             for (; j + 32 <= bpr; j += 32) {
@@ -349,20 +345,20 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
                 __m256i pc_hi = _mm256_abs_epi16(_mm256_sub_epi16(p_hi, vc_hi));
 
 
-                __m256i pa_le_pb_lo = _mm256_xor_si256(_mm256_cmpgt_epi16(pa_lo, pb_lo), all1);
-                __m256i pa_le_pb_hi = _mm256_xor_si256(_mm256_cmpgt_epi16(pa_hi, pb_hi), all1);
+                __m256i not_pa_le_pb_lo = _mm256_cmpgt_epi16(pa_lo, pb_lo);
+                __m256i not_pa_le_pb_hi = _mm256_cmpgt_epi16(pa_hi, pb_hi);
 
-                __m256i pa_le_pc_lo = _mm256_xor_si256(_mm256_cmpgt_epi16(pa_lo, pc_lo), all1);
-                __m256i pa_le_pc_hi = _mm256_xor_si256(_mm256_cmpgt_epi16(pa_hi, pc_hi), all1);
+                __m256i not_pa_le_pc_lo = _mm256_cmpgt_epi16(pa_lo, pc_lo);
+                __m256i not_pa_le_pc_hi = _mm256_cmpgt_epi16(pa_hi, pc_hi);
 
-                __m256i pb_le_pc_lo = _mm256_xor_si256(_mm256_cmpgt_epi16(pb_lo, pc_lo), all1);
-                __m256i pb_le_pc_hi = _mm256_xor_si256(_mm256_cmpgt_epi16(pb_hi, pc_hi), all1);
+                __m256i not_cond1_lo = _mm256_or_si256(not_pa_le_pb_lo, not_pa_le_pc_lo);
+                __m256i not_cond1_hi = _mm256_or_si256(not_pa_le_pb_hi, not_pa_le_pc_hi);
 
-                __m256i d_lo = _mm256_blendv_epi8(vb_lo, vc_lo, pb_le_pc_lo);
-                __m256i d_hi = _mm256_blendv_epi8(vb_hi, vc_hi, pb_le_pc_hi);
+                __m256i not_cond2_lo = _mm256_cmpgt_epi16(pb_lo, pc_lo);
+                __m256i not_cond2_hi = _mm256_cmpgt_epi16(pb_hi, pc_hi);
 
-                d_lo = _mm256_blendv_epi8(va_lo, d_lo, _mm256_and_si256(pa_le_pb_lo, pa_le_pc_lo));
-                d_hi = _mm256_blendv_epi8(va_hi, d_hi, _mm256_and_si256(pa_le_pb_hi, pa_le_pc_hi));
+                __m256i d_lo = _mm256_blendv_epi8(va_lo, _mm256_blendv_epi8(vb_lo, vc_lo, not_cond2_lo), not_cond1_lo);
+                __m256i d_hi = _mm256_blendv_epi8(va_hi, _mm256_blendv_epi8(vb_hi, vc_hi, not_cond2_hi), not_cond1_hi);
 
                 __m256i d = _mm256_packus_epi16(d_lo, d_hi);
 
@@ -418,8 +414,7 @@ static inline int slp_png_encode(struct slp_image *image, FILE* file) {
                 int pb = abs(p - raw[j - bpr]);
                 int pc = abs(p - raw[j - bpr - bpp]);
 
-                uint8_t d = (pb <= pc) ? (raw[j - bpr]) : (raw[j - bpr - bpp]);
-                d = (pa <= pb && pa <= pc) ? (raw[j - bpp]) : (d);
+                uint8_t d = (pa <= pb && pa <= pc) ? (raw[j - bpp]) : ((pb <= pc) ? (raw[j - bpr]) : (raw[j - bpr - bpp]));
 
                 filter_buffers[0][j+1] = raw[j];
                 filter_buffers[1][j+1] = raw[j] - raw[j - bpp];
@@ -561,14 +556,5 @@ cleanup:
     free(out);
     for (int i = 0; i < 5; i++) free(filter_buffers[i]);
     return return_code;
-}
-
-
-
-
-// x must >= 0
-static inline size_t ceil__(double x) {
-    size_t a = (size_t)x;
-    return a + (x > a);
 }
 
