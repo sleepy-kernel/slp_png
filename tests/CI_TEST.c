@@ -41,11 +41,19 @@ int main(int argc, char* argv[]) {
 
 
     int ret = slp_png_write(a, new_path);
-    if (ret != 0) {printf("\nwrite failed: %d\n", ret);return 1;}
-    free(a.buffer);
+    if (ret != 0) {printf("\nwrite failed: %d\n", ret);free(a.buffer);return 1;}
     // validate new saved image
     slp_image b = slp_png_read(new_path);
     if (b.buffer == NULL) {printf("\nread newly saved .png failed: %d\n", a.bit_depth);return 1;}
+    const size_t size = (size_t)a.width * a.height * a.channels * (1 + (a.bit_depth == 16));
+    for (size_t i = 0; i < size; i++) {
+        if (a.buffer[i] != b.buffer[i]) {
+            printf("slp_png_write output error\n");
+            free(a.buffer);free(b.buffer);
+            return 1;
+        }
+    }
+    free(a.buffer);
     free(b.buffer);
     return 0;
 }
