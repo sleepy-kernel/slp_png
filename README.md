@@ -1,14 +1,4 @@
-## This is meant to be an open-source, lightweight, modern, fast PNG codec
-
-- AVX2, SSE2 support
-- Use zlib-ng
-- Compatible
-    - Meant to be high such that it can run on a microcontroller (still in progress)
-        - As I cannot test with all hardware so, I'd need help in testing
-- Efficient
-    - In the current version, as tested on my machine, deflate/inflate runtime is more than 80% of the total runtime even at compression level 1, which means the runtime is mainly just zlib-ng runtime
-- **NOTICE**: All this is possible because of how well-defined PNG format is
-
+# PNG codec library written in C
 
 ## Project structure
 - slp_png: PNG codec
@@ -18,7 +8,7 @@
         - src/slp_png_read/*
         - src/slp_png_write/*
     - dependencies:
-        - zlib-ng
+        - zlib-ng ( do not use zib-ng-compat )
 
 - slp_image_transform: extra image transformation tools
     - include:
@@ -27,7 +17,7 @@
     - src:
         - src/slp_image_transform/*
     - dependencies:
-        - pthreads
+        - pthreads ( or pthread4W on windows )
 
 
 ## Basic usage
@@ -50,14 +40,6 @@ int main()
 ```
 - NOTICE: if slp_png_read fail, your_image.bit_depth will be overwitten with a specified error code ! 
     - See in include/slp_image.h for more details about the error code
-
-
-## Contribute
-- Please don't vibe coding, you can't enjoy the process if AI did it for you :)
-- I appreciate all your help
-- I will definitely respond to your pull request
-- Just freely share your idea and you don't have to be formal
-- Beginners are welcome
 
 
 ## Support
@@ -90,9 +72,10 @@ int main()
         - Heuristic filtering is extremely cheap, if good filter is generated, deflate runtime will reduce significantly
 
 - For both slp_png_read and slp_png_write:
+    - AVX2, SSE2 support
     - Thread-safe: this function can call by any thread, but it does not automatically handle fileIO conflicts
     - Allocation: mainly malloc, stack allocation via arrays are small
-        - Specifically, total size of all array allocated on the stack is only 57 bytes
+        - Specifically, total size of all array allocated on the stack is only about 57 bytes
         - Low risk of stack overflow
 
 
@@ -134,11 +117,9 @@ cmake --build build
     - libspng: 10.4 MiB
     - slp_png: 10.7 MiB
 
-- peak RAM usage:
+- Peak RAM usage:
     - libspng: 33 MiB
     - slp_png: 33 MiB
-
-- Notice that this test ran on a specific setup as listed above.
 
 
 ## Quick test on minimal setup
